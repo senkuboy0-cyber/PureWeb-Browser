@@ -4,12 +4,12 @@ plugins {
 
 android {
     namespace 'com.pureweb.browser'
-    compileSdk 36  // এটি ৩৬ করা হলো
+    compileSdk 36
 
     defaultConfig {
         applicationId "com.pureweb.browser"
-        minSdk 24
-        targetSdk 36  // এটিও ৩৬ করা হলো
+        minSdk 26  // এটি ২৪ থেকে পরিবর্তন করে ২৬ করা হলো
+        targetSdk 36
         versionCode 1
         versionName "1.0"
     }
