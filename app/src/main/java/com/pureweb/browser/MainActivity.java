@@ -16,6 +16,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import org.mozilla.geckoview.GeckoRuntime;
 import org.mozilla.geckoview.GeckoSession;
 import org.mozilla.geckoview.GeckoView;
+import org.mozilla.geckoview.NavigationDelegate;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -26,16 +27,17 @@ public class MainActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private SharedPreferences prefs;
     private ImageButton btnBack, btnForward, btnHome, btnRefresh, menuBtn;
+    
+    // ব্যাক বাটন চেক করার জন্য ভেরিয়েবল
+    private boolean canGoBack = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // SharedPreferences সেটআপ (সেটিংস সেভ করার জন্য)
         prefs = getSharedPreferences("PureWebPrefs", MODE_PRIVATE);
 
-        // UI এলিমেন্ট খুঁজে বের করা
         geckoView = findViewById(R.id.geckoView);
         urlBar = findViewById(R.id.urlBar);
         progressBar = findViewById(R.id.progressBar);
@@ -45,25 +47,29 @@ public class MainActivity extends AppCompatActivity {
         btnRefresh = findViewById(R.id.btnRefresh);
         menuBtn = findViewById(R.id.menuBtn);
 
-        // GeckoRuntime সেটআপ (শুধু প্রথমবার)
         if (runtime == null) {
             runtime = GeckoRuntime.create(this);
-            // uBlock Origin ইনস্টল
             installAdBlocker();
         }
 
-        // নতুন সেশন তৈরি
         session = new GeckoSession();
         session.open(runtime);
         geckoView.setSession(session);
 
-        // প্রগ্রেস বার এবং URL আপডেট
+        // NavigationDelegate সেট করা হচ্ছে canGoBack চেক করার জন্য
+        session.setNavigationDelegate(new NavigationDelegate() {
+            @Override
+            public void onCanGoBack(GeckoSession session, boolean canGoBack) {
+                MainActivity.this.canGoBack = canGoBack;
+            }
+        });
+
         session.setProgressDelegate(new GeckoSession.ProgressDelegate() {
             @Override
             public void onPageStart(GeckoSession session, String url) {
                 runOnUiThread(() -> {
                     progressBar.setVisibility(View.VISIBLE);
-                    urlBar.setText(url); // URL বারে লিংক দেখানো
+                    urlBar.setText(url);
                 });
             }
 
@@ -73,20 +79,12 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // প্রাথমিকভাবে হোম পেজ লোড
         loadHomePage();
-
-        // বাটন অ্যাকশন
         setupNavigationButtons();
-        
-        // URL বার এন্টার অ্যাকশন
         setupUrlBar();
-        
-        // মেনু বাটন অ্যাকশন
         setupMenuButton();
     }
 
-    // uBlock Origin ইনস্টলেশন
     private void installAdBlocker() {
         String extensionUrl = "https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi";
         runtime.getWebExtensionController().install(extensionUrl).accept(
@@ -95,24 +93,13 @@ public class MainActivity extends AppCompatActivity {
         );
     }
 
-    // নেভিগেশন বাটন সেটআপ
     private void setupNavigationButtons() {
-        btnBack.setOnClickListener(v -> {
-            if (session != null) session.goBack();
-        });
-
-        btnForward.setOnClickListener(v -> {
-            if (session != null) session.goForward();
-        });
-
+        btnBack.setOnClickListener(v -> session.goBack());
+        btnForward.setOnClickListener(v -> session.goForward());
         btnHome.setOnClickListener(v -> loadHomePage());
-
-        btnRefresh.setOnClickListener(v -> {
-            if (session != null) session.reload();
-        });
+        btnRefresh.setOnClickListener(v -> session.reload());
     }
 
-    // URL বার এবং সার্চ লজিক
     private void setupUrlBar() {
         urlBar.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_GO || actionId == EditorInfo.IME_ACTION_SEARCH) {
@@ -124,7 +111,6 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    // থ্রি-ডট মেনু সেটআপ
     private void setupMenuButton() {
         menuBtn.setOnClickListener(v -> {
             PopupMenu popup = new PopupMenu(MainActivity.this, v);
@@ -150,21 +136,17 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    // স্মার্ট সার্চ লজিক
     private void loadUrlOrSearch(String input) {
         if (input.isEmpty()) return;
 
         String url;
-        // যদি কোনো ওয়েবসাইট হয় (যেমন google.com)
         if (input.contains(".") && !input.contains(" ")) {
             if (!input.startsWith("http://") && !input.startsWith("https://")) {
                 url = "https://" + input;
             } else {
                 url = input;
             }
-        } 
-        // যদি সার্চ কোয়েরি হয়
-        else {
+        } else {
             String engine = prefs.getString("search_engine", "Google");
             String baseUrl;
 
@@ -181,19 +163,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadHomePage() {
-        // ডিফল্ট হোম পেজ Google
         session.loadUri("https://www.google.com");
     }
 
-    // ব্যাক বাটন ফাংশনালিটি
     @Override
     public void onBackPressed() {
-        if (session != null) {
-            if (session.canGoBack()) {
-                session.goBack();
-            } else {
-                super.onBackPressed();
-            }
+        // এখানে আমরা ভেরিয়েবল ব্যবহার করছি
+        if (canGoBack) {
+            session.goBack();
+        } else {
+            super.onBackPressed();
         }
     }
 }
