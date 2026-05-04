@@ -16,7 +16,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import org.mozilla.geckoview.GeckoRuntime;
 import org.mozilla.geckoview.GeckoSession;
 import org.mozilla.geckoview.GeckoView;
-import org.mozilla.geckoview.NavigationDelegate;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -28,7 +27,6 @@ public class MainActivity extends AppCompatActivity {
     private SharedPreferences prefs;
     private ImageButton btnBack, btnForward, btnHome, btnRefresh, menuBtn;
     
-    // ব্যাক বাটন চেক করার জন্য ভেরিয়েবল
     private boolean canGoBack = false;
 
     @Override
@@ -56,8 +54,8 @@ public class MainActivity extends AppCompatActivity {
         session.open(runtime);
         geckoView.setSession(session);
 
-        // NavigationDelegate সেট করা হচ্ছে canGoBack চেক করার জন্য
-        session.setNavigationDelegate(new NavigationDelegate() {
+        // এখানে GeckoSession.NavigationDelegate ব্যবহার করতে হবে
+        session.setNavigationDelegate(new GeckoSession.NavigationDelegate() {
             @Override
             public void onCanGoBack(GeckoSession session, boolean canGoBack) {
                 MainActivity.this.canGoBack = canGoBack;
@@ -168,7 +166,6 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        // এখানে আমরা ভেরিয়েবল ব্যবহার করছি
         if (canGoBack) {
             session.goBack();
         } else {
