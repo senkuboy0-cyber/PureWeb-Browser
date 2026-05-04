@@ -11,10 +11,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # ১. কোড চেকআউট করা
     - uses: actions/checkout@v3
 
-    # ২. Java ১৭ সেটআপ করা (Android এর জন্য প্রয়োজন)
     - name: Set up JDK 17
       uses: actions/setup-java@v3
       with:
@@ -22,24 +20,23 @@ jobs:
         distribution: 'temurin'
         cache: gradle
 
-    # ৩. Gradle এর এক্সিকিউশন পারমিশন দেওয়া
     - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
+      run: |
+        chmod +x gradlew
+        # এই লাইনটি Windows Line Ending এর সমস্যা ঠিক করবে
+        sed -i 's/\r$//' gradlew
 
-    # ৪. Debug APK বিল্ড করা
     - name: Build Debug APK
       run: ./gradlew assembleDebug
 
-    # ৫. GitHub Release তৈরি করা এবং APK আপলোড করা
     - name: Create Release and Upload APK
       uses: softprops/action-gh-release@v1
-      if: github.ref == 'refs/heads/main' # শুধু main ব্রাঞ্চে পুশ দিলেই রিলিজ হবে
+      if: github.ref == 'refs/heads/main'
       with:
-        tag_name: v1.0.${{ github.run_number }} # অটোমেটিক ভার্সন ট্যাগ (যেমন: v1.0.5)
+        tag_name: v1.0.${{ github.run_number }}
         name: PureWeb Release ${{ github.run_number }}
         body: |
           New build for PureWeb Browser.
-          - Updated with latest code.
         files: |
           app/build/outputs/apk/debug/app-debug.apk
         draft: false
