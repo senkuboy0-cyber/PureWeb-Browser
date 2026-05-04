@@ -3,8 +3,6 @@ name: PureWeb Build & Release
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
 
 jobs:
   build:
@@ -19,20 +17,52 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    # --- এখানে ম্যাজিক শুরু (Auto Fix) ---
-    - name: Setup Gradle Wrapper
+    # =================================================
+    # ম্যাজিক স্টেপ: এটি সব মিসিং ফাইল অটো ক্রিয়েট করবে
+    # =================================================
+    - name: Setup Project Files
       run: |
-        # ১. gradle wrapper ফোল্ডার তৈরি
+        # ১. Gradle Wrapper ফোল্ডার ও ফাইল তৈরি
         mkdir -p gradle/wrapper
         
-        # ২. সঠিক gradle-wrapper.jar ডাউনলোড (এটি ছাড়া বিল্ড হয় না)
+        # gradle-wrapper.properties ফাইল তৈরি (সবচেয়ে জরুরি)
+        echo "distributionBase=GRADLE_USER_HOME" > gradle/wrapper/gradle-wrapper.properties
+        echo "distributionPath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
+        echo "distributionUrl=https\://services.gradle.org/distributions/gradle-8.0-bin.zip" >> gradle/wrapper/gradle-wrapper.properties
+        echo "zipStoreBase=GRADLE_USER_HOME" >> gradle/wrapper/gradle-wrapper.properties
+        echo "zipStorePath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
+
+        # gradle-wrapper.jar ডাউনলোড
         curl -L -o gradle/wrapper/gradle-wrapper.jar https://github.com/AntennaPod/AntennaPod/raw/master/gradle/wrapper/gradle-wrapper.jar
         
-        # ৩. সঠিক gradlew স্ক্রিপ্ট ডাউনলোড করা (এটি ভাঙা স্ক্রিপ্ট ঠিক করবে)
+        # gradlew স্ক্রিপ্ট ডাউনলোড ও পারমিশন সেট
         curl -L -o gradlew https://github.com/AntennaPod/AntennaPod/raw/master/gradlew
-        
-        # ৪. পারমিশন দেওয়া
         chmod +x gradlew
+
+        # ২. settings.gradle ফাইল তৈরি (যদি না থাকে)
+        if [ ! -f "settings.gradle" ]; then
+          echo "rootProject.name='PureWeb'" > settings.gradle
+          echo "include ':app'" >> settings.gradle
+        fi
+
+        # ৩. রুট build.gradle ফাইল তৈরি (যদি না থাকে)
+        if [ ! -f "build.gradle" ]; then
+          echo "buildscript {" > build.gradle
+          echo "    repositories {" >> build.gradle
+          echo "        google()" >> build.gradle
+          echo "        mavenCentral()" >> build.gradle
+          echo "    }" >> build.gradle
+          echo "    dependencies {" >> build.gradle
+          echo "        classpath 'com.android.tools.build:gradle:8.2.0'" >> build.gradle
+          echo "    }" >> build.gradle
+          echo "}" >> build.gradle
+          echo "allprojects {" >> build.gradle
+          echo "    repositories {" >> build.gradle
+          echo "        google()" >> build.gradle
+          echo "        mavenCentral()" >> build.gradle
+          echo "    }" >> build.gradle
+          echo "}" >> build.gradle
+        fi
 
     - name: Build Debug APK
       run: ./gradlew assembleDebug
@@ -43,12 +73,7 @@ jobs:
       with:
         tag_name: v1.0.${{ github.run_number }}
         name: PureWeb Release ${{ github.run_number }}
-        body: |
-          PureWeb Browser Auto Build.
-          Features: GeckoView, uBlock Origin, Dark Theme.
-        files: |
-          app/build/outputs/apk/debug/app-debug.apk
-        draft: false
-        prerelease: false
+        body: "PureWeb Browser Auto Build with uBlock Origin."
+        files: app/build/outputs/apk/debug/app-debug.apk
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
