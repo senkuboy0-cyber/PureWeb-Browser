@@ -17,33 +17,28 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    # =================================================
-    # এখানে ভার্সন 8.2 করা হয়েছে (আগে 8.0 ছিল)
-    # =================================================
     - name: Setup Project Files
       run: |
         mkdir -p gradle/wrapper
         
-        # gradle-wrapper.properties ফাইল তৈরি (Gradle 8.2)
+        # Gradle Version 8.11.1 set করা হলো (Plugin 8.9.1 এর জন্য প্রয়োজন)
         echo "distributionBase=GRADLE_USER_HOME" > gradle/wrapper/gradle-wrapper.properties
         echo "distributionPath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
-        echo "distributionUrl=https\://services.gradle.org/distributions/gradle-8.2-bin.zip" >> gradle/wrapper/gradle-wrapper.properties
+        echo "distributionUrl=https\://services.gradle.org/distributions/gradle-8.11.1-bin.zip" >> gradle/wrapper/gradle-wrapper.properties
         echo "zipStoreBase=GRADLE_USER_HOME" >> gradle/wrapper/gradle-wrapper.properties
         echo "zipStorePath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
 
-        # বাকি ফাইলগুলো ডাউনলোড
         curl -L -o gradle/wrapper/gradle-wrapper.jar https://github.com/AntennaPod/AntennaPod/raw/master/gradle/wrapper/gradle-wrapper.jar
         curl -L -o gradlew https://github.com/AntennaPod/AntennaPod/raw/master/gradlew
         chmod +x gradlew
 
-        # settings.gradle এবং build.gradle যদি মিসিং থাকে (তৈরি করে নেয়)
         if [ ! -f "settings.gradle" ]; then
           echo "rootProject.name='PureWeb'" > settings.gradle
           echo "include ':app'" >> settings.gradle
         fi
 
         if [ ! -f "build.gradle" ]; then
-          echo "plugins { id 'com.android.application' version '8.2.0' apply false }" > build.gradle
+          echo "plugins { id 'com.android.application' version '8.9.1' apply false }" > build.gradle
         fi
 
     - name: Build Debug APK
@@ -55,7 +50,7 @@ jobs:
       with:
         tag_name: v1.0.${{ github.run_number }}
         name: PureWeb Release ${{ github.run_number }}
-        body: "PureWeb Browser Auto Build."
+        body: "PureWeb Browser Auto Build (2026)."
         files: app/build/outputs/apk/debug/app-debug.apk
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

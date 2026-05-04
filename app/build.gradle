@@ -4,12 +4,12 @@ plugins {
 
 android {
     namespace 'com.pureweb.browser'
-    compileSdk 34
+    compileSdk 36  // এটি ৩৬ করা হলো
 
     defaultConfig {
         applicationId "com.pureweb.browser"
         minSdk 24
-        targetSdk 34
+        targetSdk 36  // এটিও ৩৬ করা হলো
         versionCode 1
         versionName "1.0"
     }
@@ -21,13 +21,12 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 }
 
 dependencies {
-    // এখানে সঠিক Nightly ডিপেন্ডেন্সি এবং ভার্সন দেওয়া হলো
     implementation "org.mozilla.geckoview:geckoview-nightly:152.0.20260429091901"
 
     implementation 'androidx.appcompat:appcompat:1.6.1'
