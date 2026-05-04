@@ -18,13 +18,21 @@ jobs:
       with:
         java-version: '17'
         distribution: 'temurin'
-        cache: gradle
 
-    - name: Grant execute permission for gradlew
+    # --- এখানে ম্যাজিক শুরু (Auto Fix) ---
+    - name: Setup Gradle Wrapper
       run: |
+        # ১. gradle wrapper ফোল্ডার তৈরি
+        mkdir -p gradle/wrapper
+        
+        # ২. সঠিক gradle-wrapper.jar ডাউনলোড (এটি ছাড়া বিল্ড হয় না)
+        curl -L -o gradle/wrapper/gradle-wrapper.jar https://github.com/AntennaPod/AntennaPod/raw/master/gradle/wrapper/gradle-wrapper.jar
+        
+        # ৩. সঠিক gradlew স্ক্রিপ্ট ডাউনলোড করা (এটি ভাঙা স্ক্রিপ্ট ঠিক করবে)
+        curl -L -o gradlew https://github.com/AntennaPod/AntennaPod/raw/master/gradlew
+        
+        # ৪. পারমিশন দেওয়া
         chmod +x gradlew
-        # এই লাইনটি Windows Line Ending এর সমস্যা ঠিক করবে
-        sed -i 's/\r$//' gradlew
 
     - name: Build Debug APK
       run: ./gradlew assembleDebug
@@ -36,7 +44,8 @@ jobs:
         tag_name: v1.0.${{ github.run_number }}
         name: PureWeb Release ${{ github.run_number }}
         body: |
-          New build for PureWeb Browser.
+          PureWeb Browser Auto Build.
+          Features: GeckoView, uBlock Origin, Dark Theme.
         files: |
           app/build/outputs/apk/debug/app-debug.apk
         draft: false
