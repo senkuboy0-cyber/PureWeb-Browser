@@ -11,4 +11,8 @@
     <!-- PureWeb Theme Colors -->
     <color name="pureweb_primary">#4CAF50</color>
     <color name="pureweb_primary_dark">#388E3C</color>
+
+    <!-- Missing Colors (এগুলো যোগ করা হলো) -->
+    <color name="url_bar_bg">#FFFFFF</color>
+    <color name="light_gray">#F5F5F5</color>
 </resources>
