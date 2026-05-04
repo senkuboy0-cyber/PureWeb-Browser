@@ -1,242 +1,199 @@
 package com.pureweb.browser;
 
-import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Bitmap;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
+import android.util.Log;
 import android.view.KeyEvent;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
-import android.webkit.WebChromeClient;
-import android.webkit.WebSettings;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
+import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.PopupMenu;
 import android.widget.ProgressBar;
-import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.appcompat.app.AppCompatActivity;
+import org.mozilla.geckoview.GeckoRuntime;
+import org.mozilla.geckoview.GeckoSession;
+import org.mozilla.geckoview.GeckoView;
 
 public class MainActivity extends AppCompatActivity {
 
-    private WebView webView;
+    private GeckoView geckoView;
+    private GeckoSession session;
+    private GeckoRuntime runtime;
     private EditText urlBar;
-    private ImageButton btnBack, btnForward, btnRefresh, btnMenu;
     private ProgressBar progressBar;
-    private TextView statusText, pageTitle;
-    private View bottomBar;
+    private SharedPreferences prefs;
+    private ImageButton btnBack, btnForward, btnHome, btnRefresh, menuBtn;
 
-    private SharedPreferences preferences;
-    private String currentUrl;
-
-    @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        // SharedPreferences সেটআপ (সেটিংস সেভ করার জন্য)
+        prefs = getSharedPreferences("PureWebPrefs", MODE_PRIVATE);
 
-        initViews();
-        setupWebView();
-        setupListeners();
-        loadHome();
-    }
+        // UI এলিমেন্ট খুঁজে বের করা
+        geckoView = findViewById(R.id.geckoView);
+        urlBar = findViewById(R.id.urlBar);
+        progressBar = findViewById(R.id.progressBar);
+        btnBack = findViewById(R.id.btnBack);
+        btnForward = findViewById(R.id.btnForward);
+        btnHome = findViewById(R.id.btnHome);
+        btnRefresh = findViewById(R.id.btnRefresh);
+        menuBtn = findViewById(R.id.menuBtn);
 
-    private void initViews() {
-        webView = findViewById(R.id.web_view);
-        urlBar = findViewById(R.id.url_bar);
-        btnBack = findViewById(R.id.btn_back);
-        btnForward = findViewById(R.id.btn_forward);
-        btnRefresh = findViewById(R.id.btn_refresh);
-        btnMenu = findViewById(R.id.btn_menu);
-        progressBar = findViewById(R.id.progress_bar);
-        statusText = findViewById(R.id.status_text);
-        pageTitle = findViewById(R.id.page_title);
-        bottomBar = findViewById(R.id.bottom_bar);
-    }
-
-    @SuppressLint("SetJavaScriptEnabled")
-    private void setupWebView() {
-        WebSettings webSettings = webView.getSettings();
-        webSettings.setJavaScriptEnabled(preferences.getBoolean("js_enabled", true));
-        webSettings.setDomStorageEnabled(true);
-        webSettings.setDatabaseEnabled(true);
-        webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
-        webSettings.setAllowFileAccess(true);
-        webSettings.setUseWideViewPort(true);
-        webSettings.setLoadWithOverviewMode(true);
-
-        if (preferences.getBoolean("desktop_mode", false)) {
-            webSettings.setUserAgentString(WebSettings.getDefaultUserAgent(this));
+        // GeckoRuntime সেটআপ (শুধু প্রথমবার)
+        if (runtime == null) {
+            runtime = GeckoRuntime.create(this);
+            // uBlock Origin ইনস্টল
+            installAdBlocker();
         }
 
-        webView.setWebViewClient(new WebViewClient() {
+        // নতুন সেশন তৈরি
+        session = new GeckoSession();
+        session.open(runtime);
+        geckoView.setSession(session);
+
+        // প্রগ্রেস বার এবং URL আপডেট
+        session.setProgressDelegate(new GeckoSession.ProgressDelegate() {
             @Override
-            public void onPageStarted(WebView view, String url, Bitmap favicon) {
-                urlBar.setText(url);
-                currentUrl = url;
-                statusText.setText(R.string.loading);
-                btnRefresh.setImageResource(R.drawable.ic_close);
-                progressBar.setVisibility(View.VISIBLE);
+            public void onPageStart(GeckoSession session, String url) {
+                runOnUiThread(() -> {
+                    progressBar.setVisibility(View.VISIBLE);
+                    urlBar.setText(url); // URL বারে লিংক দেখানো
+                });
             }
 
             @Override
-            public void onPageFinished(WebView view, String url) {
-                statusText.setText(R.string.page_loaded);
-                btnRefresh.setImageResource(R.drawable.ic_refresh);
-                progressBar.setVisibility(View.GONE);
-                updateNavigationButtons();
-                invalidateOptionsMenu();
-            }
-
-            @Override
-            public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
-                statusText.setText(R.string.error_loading);
-                progressBar.setVisibility(View.GONE);
+            public void onPageStop(GeckoSession session, boolean success) {
+                runOnUiThread(() -> progressBar.setVisibility(View.GONE));
             }
         });
 
-        webView.setWebChromeClient(new WebChromeClient() {
-            @Override
-            public void onProgressChanged(WebView view, int newProgress) {
-                progressBar.setMax(100);
-                progressBar.setProgress(newProgress);
-            }
+        // প্রাথমিকভাবে হোম পেজ লোড
+        loadHomePage();
 
-            @Override
-            public void onReceivedTitle(WebView view, String title) {
-                pageTitle.setText(title);
-            }
-        });
+        // বাটন অ্যাকশন
+        setupNavigationButtons();
+        
+        // URL বার এন্টার অ্যাকশন
+        setupUrlBar();
+        
+        // মেনু বাটন অ্যাকশন
+        setupMenuButton();
     }
 
-    private void setupListeners() {
+    // uBlock Origin ইনস্টলেশন
+    private void installAdBlocker() {
+        String extensionUrl = "https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi";
+        runtime.getWebExtensionController().install(extensionUrl).accept(
+            extension -> Log.d("PureWeb", "uBlock Origin Installed Successfully!"),
+            exception -> Log.e("PureWeb", "Extension failed: " + exception.getMessage())
+        );
+    }
+
+    // নেভিগেশন বাটন সেটআপ
+    private void setupNavigationButtons() {
         btnBack.setOnClickListener(v -> {
-            if (webView.canGoBack()) {
-                webView.goBack();
-            }
+            if (session != null) session.goBack();
         });
 
         btnForward.setOnClickListener(v -> {
-            if (webView.canGoForward()) {
-                webView.goForward();
-            }
+            if (session != null) session.goForward();
         });
+
+        btnHome.setOnClickListener(v -> loadHomePage());
 
         btnRefresh.setOnClickListener(v -> {
-            if (webView.isLoading()) {
-                webView.stopLoading();
-            } else {
-                webView.reload();
-            }
+            if (session != null) session.reload();
         });
+    }
 
-        btnMenu.setOnClickListener(this::showMenu);
-
+    // URL বার এবং সার্চ লজিক
+    private void setupUrlBar() {
         urlBar.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_GO ||
-                    (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
-                loadUrl(urlBar.getText().toString());
+            if (actionId == EditorInfo.IME_ACTION_GO || actionId == EditorInfo.IME_ACTION_SEARCH) {
+                String input = urlBar.getText().toString().trim();
+                loadUrlOrSearch(input);
                 return true;
             }
             return false;
         });
     }
 
-    private void showMenu(View anchor) {
-        PopupMenu popup = new PopupMenu(this, anchor);
-        popup.getMenuInflater().inflate(R.menu.browser_menu, popup.getMenu());
-
-        popup.setOnMenuItemClickListener(item -> {
-            int id = item.getItemId();
-            if (id == R.id.action_home) {
-                loadHome();
-            } else if (id == R.id.action_share) {
-                shareUrl();
-            } else if (id == R.id.action_settings) {
-                openSettings();
-            } else if (id == R.id.action_find) {
-                findInPage();
-            }
-            return true;
+    // থ্রি-ডট মেনু সেটআপ
+    private void setupMenuButton() {
+        menuBtn.setOnClickListener(v -> {
+            PopupMenu popup = new PopupMenu(MainActivity.this, v);
+            popup.getMenuInflater().inflate(R.menu.browser_menu, popup.getMenu());
+            popup.setOnMenuItemClickListener(item -> {
+                int id = item.getItemId();
+                if (id == R.id.menu_settings) {
+                    startActivity(new Intent(MainActivity.this, SettingsActivity.class));
+                    return true;
+                } else if (id == R.id.menu_refresh) {
+                    session.reload();
+                    return true;
+                } else if (id == R.id.menu_share) {
+                    Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                    shareIntent.setType("text/plain");
+                    shareIntent.putExtra(Intent.EXTRA_TEXT, urlBar.getText().toString());
+                    startActivity(Intent.createChooser(shareIntent, "Share URL"));
+                    return true;
+                }
+                return false;
+            });
+            popup.show();
         });
-
-        popup.show();
     }
 
-    private void loadHome() {
-        String homeUrl = preferences.getString("home_url", getString(R.string.default_home));
-        webView.loadUrl(homeUrl);
-    }
+    // স্মার্ট সার্চ লজিক
+    private void loadUrlOrSearch(String input) {
+        if (input.isEmpty()) return;
 
-    private void loadUrl(String url) {
-        if (url.isEmpty()) {
-            Toast.makeText(this, "Please enter a URL", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        if (!url.startsWith("http://") && !url.startsWith("https://")) {
-            if (url.contains(".")) {
-                url = "https://" + url;
+        String url;
+        // যদি কোনো ওয়েবসাইট হয় (যেমন google.com)
+        if (input.contains(".") && !input.contains(" ")) {
+            if (!input.startsWith("http://") && !input.startsWith("https://")) {
+                url = "https://" + input;
             } else {
-                url = "https://www.google.com/search?q=" + url.replace(" ", "+");
+                url = input;
+            }
+        } 
+        // যদি সার্চ কোয়েরি হয়
+        else {
+            String engine = prefs.getString("search_engine", "Google");
+            String baseUrl;
+
+            if (engine.equals("DuckDuckGo")) {
+                baseUrl = "https://duckduckgo.com/?q=";
+            } else if (engine.equals("Bing")) {
+                baseUrl = "https://www.bing.com/search?q=";
+            } else {
+                baseUrl = "https://www.google.com/search?q=";
+            }
+            url = baseUrl + input;
+        }
+        session.loadUri(url);
+    }
+
+    private void loadHomePage() {
+        // ডিফল্ট হোম পেজ Google
+        session.loadUri("https://www.google.com");
+    }
+
+    // ব্যাক বাটন ফাংশনালিটি
+    @Override
+    public void onBackPressed() {
+        if (session != null) {
+            if (session.canGoBack()) {
+                session.goBack();
+            } else {
+                super.onBackPressed();
             }
         }
-
-        webView.loadUrl(url);
-    }
-
-    private void shareUrl() {
-        if (currentUrl != null) {
-            Intent shareIntent = new Intent(Intent.ACTION_SEND);
-            shareIntent.setType("text/plain");
-            shareIntent.putExtra(Intent.EXTRA_TEXT, currentUrl);
-            startActivity(Intent.createChooser(shareIntent, "Share URL"));
-        }
-    }
-
-    private void openSettings() {
-        Intent intent = new Intent(this, SettingsActivity.class);
-        startActivity(intent);
-    }
-
-    private void findInPage() {
-        Toast.makeText(this, "Find in page feature", Toast.LENGTH_SHORT).show();
-    }
-
-    private void updateNavigationButtons() {
-        btnBack.setEnabled(webView.canGoBack());
-        btnBack.setAlpha(webView.canGoBack() ? 1.0f : 0.5f);
-        btnForward.setEnabled(webView.canGoForward());
-        btnForward.setAlpha(webView.canGoForward() ? 1.0f : 0.5f);
-    }
-
-    @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_BACK && webView.canGoBack()) {
-            webView.goBack();
-            return true;
-        }
-        return super.onKeyDown(keyCode, event);
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        webView.getSettings().setJavaScriptEnabled(prefs.getBoolean("js_enabled", true));
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.browser_menu, menu);
-        return true;
     }
 }

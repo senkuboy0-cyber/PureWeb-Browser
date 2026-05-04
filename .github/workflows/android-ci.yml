@@ -1,43 +1,48 @@
-name: Android CI
+name: PureWeb Build & Release
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ main ]
+    branches: [ "main" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    # ১. কোড চেকআউট করা
+    - uses: actions/checkout@v3
 
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
+    # ২. Java ১৭ সেটআপ করা (Android এর জন্য প্রয়োজন)
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: gradle
 
-      - name: Cache Gradle packages
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+    # ৩. Gradle এর এক্সিকিউশন পারমিশন দেওয়া
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+    # ৪. Debug APK বিল্ড করা
+    - name: Build Debug APK
+      run: ./gradlew assembleDebug
 
-      - name: Build with Gradle
-        run: ./gradlew assembleDebug
-
-      - name: Upload debug APK
-        uses: actions/upload-artifact@v3
-        with:
-          name: debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+    # ৫. GitHub Release তৈরি করা এবং APK আপলোড করা
+    - name: Create Release and Upload APK
+      uses: softprops/action-gh-release@v1
+      if: github.ref == 'refs/heads/main' # শুধু main ব্রাঞ্চে পুশ দিলেই রিলিজ হবে
+      with:
+        tag_name: v1.0.${{ github.run_number }} # অটোমেটিক ভার্সন ট্যাগ (যেমন: v1.0.5)
+        name: PureWeb Release ${{ github.run_number }}
+        body: |
+          New build for PureWeb Browser.
+          - Updated with latest code.
+        files: |
+          app/build/outputs/apk/debug/app-debug.apk
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
