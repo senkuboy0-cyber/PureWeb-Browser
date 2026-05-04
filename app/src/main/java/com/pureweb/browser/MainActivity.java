@@ -4,9 +4,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.View;
-import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.PopupMenu;
@@ -26,7 +24,6 @@ public class MainActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private SharedPreferences prefs;
     private ImageButton btnBack, btnForward, btnHome, btnRefresh, menuBtn;
-    
     private boolean canGoBack = false;
 
     @Override
@@ -54,7 +51,6 @@ public class MainActivity extends AppCompatActivity {
         session.open(runtime);
         geckoView.setSession(session);
 
-        // এখানে GeckoSession.NavigationDelegate ব্যবহার করতে হবে
         session.setNavigationDelegate(new GeckoSession.NavigationDelegate() {
             @Override
             public void onCanGoBack(GeckoSession session, boolean canGoBack) {
@@ -86,7 +82,11 @@ public class MainActivity extends AppCompatActivity {
     private void installAdBlocker() {
         String extensionUrl = "https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi";
         runtime.getWebExtensionController().install(extensionUrl).accept(
-            extension -> Log.d("PureWeb", "uBlock Origin Installed Successfully!"),
+            extension -> {
+                Log.d("PureWeb", "uBlock Origin Installed!");
+                // ইউজারকে জানানো হলো যে এড ব্লকার ইনস্টল হয়েছে
+                runOnUiThread(() -> Toast.makeText(this, "Ad Blocker Active!", Toast.LENGTH_SHORT).show());
+            },
             exception -> Log.e("PureWeb", "Extension failed: " + exception.getMessage())
         );
     }
@@ -100,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void setupUrlBar() {
         urlBar.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_GO || actionId == EditorInfo.IME_ACTION_SEARCH) {
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_GO) {
                 String input = urlBar.getText().toString().trim();
                 loadUrlOrSearch(input);
                 return true;
@@ -115,17 +115,29 @@ public class MainActivity extends AppCompatActivity {
             popup.getMenuInflater().inflate(R.menu.browser_menu, popup.getMenu());
             popup.setOnMenuItemClickListener(item -> {
                 int id = item.getItemId();
+                
                 if (id == R.id.menu_settings) {
                     startActivity(new Intent(MainActivity.this, SettingsActivity.class));
                     return true;
-                } else if (id == R.id.menu_refresh) {
+                } 
+                else if (id == R.id.menu_refresh) {
                     session.reload();
                     return true;
-                } else if (id == R.id.menu_share) {
+                } 
+                else if (id == R.id.menu_share) {
                     Intent shareIntent = new Intent(Intent.ACTION_SEND);
                     shareIntent.setType("text/plain");
                     shareIntent.putExtra(Intent.EXTRA_TEXT, urlBar.getText().toString());
                     startActivity(Intent.createChooser(shareIntent, "Share URL"));
+                    return true;
+                }
+                // History এবং Bookmark এর কাজ (এখন শুধু মেসেজ দেখাবে)
+                else if (id == R.id.menu_history) {
+                    Toast.makeText(this, "History feature coming soon", Toast.LENGTH_SHORT).show();
+                    return true;
+                }
+                else if (id == R.id.menu_bookmark) {
+                    Toast.makeText(this, "Bookmark feature coming soon", Toast.LENGTH_SHORT).show();
                     return true;
                 }
                 return false;
@@ -136,18 +148,12 @@ public class MainActivity extends AppCompatActivity {
 
     private void loadUrlOrSearch(String input) {
         if (input.isEmpty()) return;
-
         String url;
         if (input.contains(".") && !input.contains(" ")) {
-            if (!input.startsWith("http://") && !input.startsWith("https://")) {
-                url = "https://" + input;
-            } else {
-                url = input;
-            }
+            url = input.startsWith("http") ? input : "https://" + input;
         } else {
             String engine = prefs.getString("search_engine", "Google");
             String baseUrl;
-
             if (engine.equals("DuckDuckGo")) {
                 baseUrl = "https://duckduckgo.com/?q=";
             } else if (engine.equals("Bing")) {

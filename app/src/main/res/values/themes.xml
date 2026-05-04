@@ -1,11 +1,12 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Theme.PureWeb" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <!-- Primary brand color. -->
+    <!-- Light Theme ব্যবহার করা হলো যাতে কালার ঠিক থাকে -->
+    <style name="Theme.PureWeb" parent="Theme.MaterialComponents.Light.NoActionBar">
         <item name="colorPrimary">@color/pureweb_primary</item>
         <item name="colorPrimaryVariant">@color/pureweb_primary_dark</item>
         <item name="colorOnPrimary">@color/white</item>
-        <!-- Status bar color. -->
         <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
+        
+        <!-- ডার্ক মোড থাকলেও লাইট থিম জোর করে ব্যবহার করা -->
+        <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
     </style>
 </resources>
