@@ -4,22 +4,14 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    
+    <!-- একটি সবুজ বৃত্ত -->
+    <path
+        android:fillColor="#4CAF50"
+        android:pathData="M54,54m40,0a40,40 0,1 1,80 0a40,40 0,1 1,-80 0"/>
+        
+    <!-- মাঝে 'P' লেটার -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M35,40 L65,40 L65,75 L35,75 Z"/>
-    <path
-        android:fillColor="#2196F3"
-        android:pathData="M38,43 L62,43 L62,50 L38,50 Z"/>
-    <path
-        android:fillColor="#2196F3"
-        android:pathData="M42,55 L55,55 L55,58 L42,58 Z"/>
-    <path
-        android:fillColor="#2196F3"
-        android:pathData="M42,61 L58,61 L58,64 L42,64 Z"/>
-    <path
-        android:fillColor="#2196F3"
-        android:pathData="M42,67 L52,67 L52,70 L42,70 Z"/>
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M55,50 L65,40 L72,47 L62,57 Z"/>
+        android:pathData="M42,70V38h14c6,0 10,4 10,9c0,5 -4,9 -10,9h-8v14h-6zM48,52h7c2.5,0 4.5,-1.5 4.5,-5s-2,-5 -4.5,-5h-7v10z"/>
 </vector>

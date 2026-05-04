@@ -1,38 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <item
+        android:id="@+id/menu_bookmark"
+        android:title="Bookmarks" />
+        
+    <item
+        android:id="@+id/menu_history"
+        android:title="History" />
 
     <item
-        android:id="@+id/action_home"
-        android:icon="@drawable/ic_logo_pureweb"
-        android:title="@string/home"
-        app:showAsAction="never" />
+        android:id="@+id/menu_refresh"
+        android:title="Refresh" />
+        
+    <item
+        android:id="@+id/menu_share"
+        android:title="Share Link" />
 
     <item
-        android:id="@+id/action_bookmarks"
-        android:icon="@drawable/ic_bookmark"
-        android:title="@string/bookmarks"
-        app:showAsAction="never" />
-
-    <item
-        android:id="@+id/action_share"
-        android:title="@string/share"
-        app:showAsAction="never" />
-
-    <item
-        android:id="@+id/action_find"
-        android:title="@string/find_in_page"
-        app:showAsAction="never" />
-
-    <item
-        android:id="@+id/action_desktop"
-        android:title="@string/desktop_mode"
-        app:showAsAction="never" />
-
-    <item
-        android:id="@+id/action_settings"
-        android:icon="@drawable/ic_settings"
-        android:title="@string/settings"
-        app:showAsAction="never" />
+        android:id="@+id/menu_settings"
+        android:title="Settings" />
 
 </menu>
