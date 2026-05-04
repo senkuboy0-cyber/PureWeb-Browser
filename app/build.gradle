@@ -12,8 +12,6 @@ android {
         targetSdk 34
         versionCode 1
         versionName "1.0"
-
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -29,14 +27,11 @@ android {
 }
 
 dependencies {
-    // GeckoView লাইব্রেরি (এটি ব্রাউজারের ইঞ্জিন)
-    implementation "org.mozilla.geckoview:geckoview:124.0.20240226164122"
+    // এখানে সঠিক Nightly ডিপেন্ডেন্সি এবং ভার্সন দেওয়া হলো
+    implementation "org.mozilla.geckoview:geckoview-nightly:152.0.20260429091901"
 
-    // Android UI কম্পোনেন্ট
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.11.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    
-    // কার্ডভিউ লেআউটের জন্য
     implementation 'androidx.cardview:cardview:1.0.0'
 }
