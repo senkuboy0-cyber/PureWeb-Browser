@@ -176,17 +176,20 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(this, "Bookmark feature coming soon", Toast.LENGTH_SHORT).show();
                     return true;
                 } else if (id == R.id.menu_devtools) {
-                    // 'javascript:' প্রিফিক্সটি সরিয়ে দিন, কারণ evaluateJavascript এটি চায় না
-                    String erudaScript = "(function(){" +
-                        "if(window.eruda){eruda.show();return;}" +
-                        "var s=document.createElement('script');" +
-                        "s.src='https://cdn.jsdelivr.net/npm/eruda';" +
-                        "document.head.appendChild(s);" +
-                        "s.onload=function(){eruda.init();};" +
-                        "})();";
-                    
-                    // loadUri এর বদলে evaluateJavascript ব্যবহার করুন
-                    session.evaluateJavascript(erudaScript, null);
+                    // এই স্ক্রিপ্টটি Eruda নামের একটি মোবাইল DevTools লোড করে
+                    String jsCode = "javascript: (" +
+                        "function() { " +
+                        "   if (typeof eruda !== 'undefined') { eruda.show(); return; } " +
+                        "   var script = document.createElement('script'); " +
+                        "   script.src = 'https://cdn.jsdelivr.net/npm/eruda'; " +
+                        "   document.body.appendChild(script); " +
+                        "   script.onload = function() { eruda.init(); eruda.show(); } " +
+                        "}" +
+                        ")()";
+
+                    // JavaScript রান করার জন্য loadUri ব্যবহার করতে হয় GeckoView তে
+                    session.loadUri(jsCode);
+                    Toast.makeText(this, "DevTools Loading...", Toast.LENGTH_SHORT).show();
                     return true;
                 }
                 return false;
