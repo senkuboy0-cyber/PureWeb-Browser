@@ -59,6 +59,16 @@
         android:backgroundTint="#4CAF50"
         android:textAllCaps="false"/>
 
+    <!-- কাস্টম এক্সটেনশন বাটন -->
+    <Button
+        android:id="@+id/btnCustomExtension"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="Developer: Install Custom Extension"
+        android:backgroundTint="#9C27B0"
+        android:textAllCaps="false"/>
+
     <Button
         android:id="@+id/btnClearCache"
         android:layout_width="match_parent"

@@ -19,7 +19,6 @@ public class MainActivity extends AppCompatActivity {
 
     private GeckoView geckoView;
     private GeckoSession session;
-    // এটি static করা হলো যাতে SettingsActivity থেকে ব্যবহার করা যায়
     public static GeckoRuntime runtime;
     
     private EditText urlBar;
@@ -46,12 +45,39 @@ public class MainActivity extends AppCompatActivity {
 
         if (runtime == null) {
             runtime = GeckoRuntime.create(this);
-            // এখানে আর অটো ইনস্টল করব না
         }
 
         session = new GeckoSession();
         session.open(runtime);
         geckoView.setSession(session);
+
+        // ContentDelegate - ফুলস্ক্রিন ভিডিও ফিক্স
+        session.setContentDelegate(new GeckoSession.ContentDelegate() {
+            @Override
+            public void onFullScreen(GeckoSession session, boolean fullScreen) {
+                if (fullScreen) {
+                    // ফুলস্ক্রিনে যাওয়ার জন্য সিস্টেম UI লুকানো
+                    getWindow().getDecorView().setSystemUiVisibility(
+                            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                            | View.SYSTEM_UI_FLAG_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+                    
+                    // টুলবার লুকানো
+                    findViewById(R.id.topBar).setVisibility(View.GONE);
+                    findViewById(R.id.bottomNav).setVisibility(View.GONE);
+                } else {
+                    // নরমাল মোডে ফিরে আসা
+                    getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+                    
+                    // টুলবার দেখানো
+                    findViewById(R.id.topBar).setVisibility(View.VISIBLE);
+                    findViewById(R.id.bottomNav).setVisibility(View.VISIBLE);
+                }
+            }
+        });
 
         session.setNavigationDelegate(new GeckoSession.NavigationDelegate() {
             @Override
