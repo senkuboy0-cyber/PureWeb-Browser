@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -13,10 +14,12 @@ import android.widget.ImageButton;
 import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.Toast;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import org.mozilla.geckoview.GeckoRuntime;
 import org.mozilla.geckoview.GeckoSession;
 import org.mozilla.geckoview.GeckoView;
+import org.mozilla.geckoview.WebExtension;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -28,7 +31,6 @@ public class MainActivity extends AppCompatActivity {
     private SharedPreferences prefs;
     private ImageButton btnBack, btnForward, btnHome, btnRefresh, menuBtn;
     private boolean canGoBack = false;
-    private boolean isFullScreenMode = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,8 +82,6 @@ public class MainActivity extends AppCompatActivity {
         session.setContentDelegate(new GeckoSession.ContentDelegate() {
             @Override
             public void onFullScreen(GeckoSession session, boolean fullScreen) {
-                isFullScreenMode = fullScreen;
-                
                 if (fullScreen) {
                     setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
                     getWindow().getDecorView().setSystemUiVisibility(
@@ -107,23 +107,19 @@ public class MainActivity extends AppCompatActivity {
         setupUrlBar();
         setupMenuButton();
 
-        // কিবোর্ড ওপেন হলে বটম ন্যাভ লুকানো
-        View bottomNav = findViewById(R.id.bottomNav);
-        findViewById(R.id.root_layout).getViewTreeObserver()
-            .addOnGlobalLayoutListener(() -> {
-                if (isFullScreenMode) return;
-                android.graphics.Rect r = new android.graphics.Rect();
-                getWindow().getDecorView().getWindowVisibleDisplayFrame(r);
-                int screenHeight = getWindow().getDecorView().getHeight();
-                int keyboardHeight = screenHeight - r.bottom;
-                
-                if (bottomNav != null) {
-                    bottomNav.setVisibility(
-                        keyboardHeight > screenHeight * 0.15
-                        ? View.GONE : View.VISIBLE
-                    );
-                }
-            });
+        // কিবোর্ড হ্যান্ডলিং
+        findViewById(R.id.root_layout).getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            if (geckoView == null) return;
+            android.graphics.Rect r = new android.graphics.Rect();
+            getWindow().getDecorView().getWindowVisibleDisplayFrame(r);
+            int screenHeight = getWindow().getDecorView().getRootView().getHeight();
+            int keypadHeight = screenHeight - r.bottom;
+            if (keypadHeight > screenHeight * 0.15) {
+                geckoView.setVerticalClipping(keypadHeight);
+            } else {
+                geckoView.setVerticalClipping(0);
+            }
+        });
     }
 
     private void setupNavigationButtons() {
@@ -138,10 +134,8 @@ public class MainActivity extends AppCompatActivity {
             if (actionId == EditorInfo.IME_ACTION_GO) {
                 String input = urlBar.getText().toString().trim();
                 loadUrlOrSearch(input);
-                
                 InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                 imm.hideSoftInputFromWindow(urlBar.getWindowToken(), 0);
-                
                 return true;
             }
             return false;
@@ -172,18 +166,55 @@ public class MainActivity extends AppCompatActivity {
                 } else if (id == R.id.menu_bookmark) {
                     Toast.makeText(this, "Bookmark feature coming soon", Toast.LENGTH_SHORT).show();
                     return true;
-                } else if (id == R.id.menu_devtools) {
-                    // এই স্ক্রিপ্টটি Eruda লোড করবে এবং গিয়ার আইকন দেখাবে
-                    String erudaScript = "javascript:(function(){if(window.eruda){eruda.show();return;}var script=document.createElement('script');script.src='https://cdn.jsdelivr.net/npm/eruda';document.body.appendChild(script);script.onload=function(){eruda.init();};})();";
-                    
-                    session.loadUri(erudaScript);
-                    Toast.makeText(this, "DevTools Icon Added", Toast.LENGTH_SHORT).show();
+                } else if (id == R.id.menu_active_extensions) {
+                    showActiveExtensions();
                     return true;
                 }
                 return false;
             });
             popup.show();
         });
+    }
+
+    private void showActiveExtensions() {
+        if (runtime == null) return;
+
+        runtime.getWebExtensionController().list().accept(extensions -> {
+            if (extensions.isEmpty()) {
+                runOnUiThread(() -> Toast.makeText(this, "No extensions installed", Toast.LENGTH_SHORT).show());
+                return;
+            }
+
+            runOnUiThread(() -> {
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setTitle("Active Extensions");
+                
+                String[] names = new String[extensions.size()];
+                for (int i = 0; i < extensions.size(); i++) {
+                    names[i] = extensions.get(i).metaData.name;
+                }
+
+                builder.setItems(names, (dialog, which) -> {
+                    WebExtension selected = extensions.get(which);
+                    openExtensionPopup(selected);
+                });
+                
+                builder.setNegativeButton("Close", null);
+                builder.show();
+            });
+        });
+    }
+
+    private void openExtensionPopup(WebExtension extension) {
+        if (extension.metaData.basePath != null) {
+            String optionUrl = extension.metaData.optionsUrl;
+            if (optionUrl != null && !optionUrl.isEmpty()) {
+                session.loadUri(optionUrl);
+                Toast.makeText(this, "Opening " + extension.metaData.name + " settings", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "This extension has no settings page", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
     private void loadUrlOrSearch(String input) {

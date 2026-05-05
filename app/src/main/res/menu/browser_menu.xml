@@ -16,13 +16,13 @@
     <item
         android:id="@+id/menu_share"
         android:title="Share Link" />
-        
+
+    <item
+        android:id="@+id/menu_active_extensions"
+        android:title="Active Extensions" />
+
     <item
         android:id="@+id/menu_settings"
         android:title="Settings" />
-        
-    <item
-        android:id="@+id/menu_devtools"
-        android:title="DevTools" />
 
 </menu>
