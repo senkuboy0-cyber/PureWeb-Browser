@@ -14,9 +14,8 @@ import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.view.WindowCompat;
-import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import org.mozilla.geckoview.GeckoRuntime;
 import org.mozilla.geckoview.GeckoSession;
 import org.mozilla.geckoview.GeckoView;
@@ -107,29 +106,19 @@ public class MainActivity extends AppCompatActivity {
         setupUrlBar();
         setupMenuButton();
 
-        // Step 1: window কে বলো insets নিজে handle করবে না
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        // GeckoView এর উপরেই insets listener বসাও
+        ViewCompat.setOnApplyWindowInsetsListener(geckoView, (v, insets) -> {
+            int imeHeight = insets.getInsets(
+                WindowInsetsCompat.Type.ime()
+            ).bottom;
 
-        // Step 2: GeckoView এর উপরেই insets listener বসাও
-        ViewCompat.setOnApplyWindowInsetsListener(
-            geckoView, (v, insets) -> {
+            View bottomNav = findViewById(R.id.bottomNav);
+            int bottomNavH = bottomNav != null ? bottomNav.getHeight() : 0;
 
-                // keyboard এর height বের করো
-                int imeHeight = insets.getInsets(
-                    WindowInsetsCompat.Type.ime()
-                ).bottom;
-
-                // system navigation bar height বাদ দাও
-                int sysNavHeight = insets.getInsets(
-                    WindowInsetsCompat.Type.systemBars()
-                ).bottom;
-
-                // GeckoView কে বলো কতটুকু নিচে ঢাকা আছে
-                geckoView.setVerticalClipping(Math.max(0, imeHeight - sysNavHeight));
-
-                return insets;
-            }
-        );
+            // GeckoView এর নিচে bottomNav আছে, তাই ওটা বাদ দিতে হবে
+            geckoView.setVerticalClipping(Math.max(0, imeHeight - bottomNavH));
+            return insets;
+        });
     }
 
     private void setupNavigationButtons() {
