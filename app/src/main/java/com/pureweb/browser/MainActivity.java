@@ -16,7 +16,6 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import org.mozilla.geckoview.GeckoRuntime;
-import org.mozilla.geckoview.GeckoRuntimeSettings;
 import org.mozilla.geckoview.GeckoSession;
 import org.mozilla.geckoview.GeckoView;
 
@@ -48,14 +47,7 @@ public class MainActivity extends AppCompatActivity {
         menuBtn = findViewById(R.id.menuBtn);
 
         if (runtime == null) {
-            // ১. সেটিংস বিল্ডার তৈরি করা
-            GeckoRuntimeSettings.Builder settingsBuilder = new GeckoRuntimeSettings.Builder();
-            
-            // ২. অটো-প্লে অন করা (সরাসরি 0 ব্যবহার করা হলো)
-            settingsBuilder.autoplayDefault(0);
-            
-            // ৩. রানটাইম তৈরি করা
-            runtime = GeckoRuntime.create(this, settingsBuilder.build());
+            runtime = GeckoRuntime.create(this);
         }
 
         session = new GeckoSession();
