@@ -170,7 +170,7 @@ public class MainActivity extends AppCompatActivity {
                 } else if (id == R.id.menu_share) {
                     Intent shareIntent = new Intent(Intent.ACTION_SEND);
                     shareIntent.setType("text/plain");
-                    shareIntent.setExtra(Intent.EXTRA_TEXT, urlBar.getText().toString());
+                    shareIntent.putExtra(Intent.EXTRA_TEXT, urlBar.getText().toString());
                     startActivity(Intent.createChooser(shareIntent, "Share URL"));
                     return true;
                 } else if (id == R.id.menu_history) {
