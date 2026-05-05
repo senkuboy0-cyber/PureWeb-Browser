@@ -81,10 +81,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onFullScreen(GeckoSession session, boolean fullScreen) {
                 if (fullScreen) {
-                    // ১. ফুলস্ক্রিনে ঢুকলে জোর করে ল্যান্ডস্কেপ (আড়াআড়ি) করা
                     setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
-                    
-                    // ২. সিস্টেম বার এবং নেভিগেশন লুকানো
                     getWindow().getDecorView().setSystemUiVisibility(
                             View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                             | View.SYSTEM_UI_FLAG_FULLSCREEN
@@ -92,41 +89,13 @@ public class MainActivity extends AppCompatActivity {
                             | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                             | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                             | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
-                    
-                    // ৩. ব্রাউজারের টুলবার লুকানো
                     findViewById(R.id.topBar).setVisibility(View.GONE);
                     findViewById(R.id.bottomNav).setVisibility(View.GONE);
                 } else {
-                    // ১. ফুলস্ক্রিন থেকে বের হলে জোর করে পোর্ট্রেট (খাড়া) করা
                     setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-                    
-                    // ২. সিস্টেম বার ফিরিয়ে আনা
                     getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
-                    
-                    // ৩. ব্রাউজারের টুলবার দেখানো
                     findViewById(R.id.topBar).setVisibility(View.VISIBLE);
                     findViewById(R.id.bottomNav).setVisibility(View.VISIBLE);
-                }
-            }
-        });
-
-        // কিবোর্ড ওপেন হলে পেজ অটোমেটিক উপরে তোলার জন্য
-        findViewById(R.id.main_layout).getViewTreeObserver().addOnGlobalLayoutListener(() -> {
-            if (geckoView != null && geckoView.getHeight() > 0) {
-                // স্ক্রিনের বর্তমান ভিসিবল এরিয়া বের করা
-                android.graphics.Rect rect = new android.graphics.Rect();
-                findViewById(R.id.main_layout).getWindowVisibleDisplayFrame(rect);
-                
-                int screenHeight = findViewById(R.id.main_layout).getRootView().getHeight();
-                int keypadHeight = screenHeight - rect.bottom;
-
-                // যদি কিবোর্ড ওপেন থাকে (height > screen এর ১৫%)
-                if (keypadHeight > screenHeight * 0.15) {
-                    // GeckoView কে বলা হলো যে নিচে কিবোর্ড আছে, পেজ উপরে সরাও
-                    geckoView.setVerticalClipping(keypadHeight);
-                } else {
-                    // কিবোর্ড বন্ধ থাকলে আগের অবস্থায় ফেরত
-                    geckoView.setVerticalClipping(0);
                 }
             }
         });
@@ -135,6 +104,27 @@ public class MainActivity extends AppCompatActivity {
         setupNavigationButtons();
         setupUrlBar();
         setupMenuButton();
+
+        // কিবোর্ড ওপেন হলে পেজের ইনপুট বক্স কিবোর্ডের উপরে নিয়ে আসার কোড
+        findViewById(R.id.root_layout).getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            if (geckoView == null) return;
+            
+            android.graphics.Rect r = new android.graphics.Rect();
+            // স্ক্রিনের কতটুকু জায়গা ভিসিবল আছে তা বের করা হচ্ছে
+            getWindow().getDecorView().getWindowVisibleDisplayFrame(r);
+            
+            int screenHeight = getWindow().getDecorView().getRootView().getHeight();
+            int keypadHeight = screenHeight - r.bottom;
+
+            // যদি কিবোর্ড ওপেন থাকে (স্ক্রিনের ১৫% এর বেশি জায়গা নিয়েছে কি না চেক করা)
+            if (keypadHeight > screenHeight * 0.15) {
+                // GeckoView কে বলা হলো নিচে কিবোর্ড আছে, পেজটি উপরে সরাও
+                geckoView.setVerticalClipping(keypadHeight);
+            } else {
+                // কিবোর্ড বন্ধ থাকলে আগের অবস্থায় ফেরত
+                geckoView.setVerticalClipping(0);
+            }
+        });
     }
 
     private void setupNavigationButtons() {
