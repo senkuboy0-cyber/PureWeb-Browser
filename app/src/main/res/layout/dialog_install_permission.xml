@@ -2,69 +2,64 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="#1E1E1E"
     android:orientation="vertical"
-    android:padding="24dp">
+    android:padding="20dp">
 
     <TextView
         android:id="@+id/dialogTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Add uBlock Origin?"
-        android:textColor="#FFFFFF"
-        android:textSize="20sp"
-        android:textStyle="bold" />
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="#000000"/>
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="Required permissions"
-        android:textColor="#B0B0B0"
-        android:textSize="14sp" />
+        android:text="Permissions Required:"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:layout_marginTop="16dp"/>
 
-    <!-- পারমিশনের লিস্ট -->
     <TextView
         android:id="@+id/dialogPermissions"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="- Access data for all websites\n- Display notifications"
-        android:textColor="#FFFFFF"
-        android:textSize="14sp" />
+        android:textSize="12sp"
+        android:textColor="#666666"
+        android:layout_marginTop="8dp"/>
 
-    <!-- প্রাইভেট ব্রাউজিং অপশন -->
     <CheckBox
         android:id="@+id/checkPrivateBrowsing"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:buttonTint="#4CAF50"
-        android:text="Allow extension in private browsing"
-        android:textColor="#B0B0B0" />
+        android:text="Allow in Private Browsing"
+        android:layout_marginTop="16dp"/>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
+        android:orientation="horizontal"
         android:gravity="end"
-        android:orientation="horizontal">
+        android:layout_marginTop="20dp">
 
         <Button
             android:id="@+id/btnCancel"
-            style="@style/Widget.MaterialComponents.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Cancel"
-            android:textColor="#B0B0B0" />
+            android:backgroundTint="#9E9E9E"
+            android:textColor="#FFFFFF"/>
 
         <Button
             android:id="@+id/btnAdd"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:backgroundTint="#4CAF50"
             android:text="Add"
-            android:textColor="#FFFFFF" />
+            android:backgroundTint="#4CAF50"
+            android:textColor="#FFFFFF"
+            android:layout_marginStart="10dp"/>
+
     </LinearLayout>
+
 </LinearLayout>

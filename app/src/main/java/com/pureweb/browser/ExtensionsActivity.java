@@ -16,6 +16,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
+
 import org.mozilla.geckoview.GeckoResult;
 import org.mozilla.geckoview.GeckoRuntime;
 import org.mozilla.geckoview.WebExtension;
@@ -38,9 +40,9 @@ public class ExtensionsActivity extends AppCompatActivity {
 
         recyclerView = findViewById(R.id.recyclerViewExtensions);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        
+
         loadRecommendedExtensions();
-        
+
         adapter = new ExtensionsAdapter();
         recyclerView.setAdapter(adapter);
     }
@@ -52,9 +54,22 @@ public class ExtensionsActivity extends AppCompatActivity {
     }
 
     private void loadRecommendedExtensions() {
-        recommendedList.add(new ExtensionItem("uBlock Origin", "uBlock0@raymondhill.net", "An efficient blocker.", 4.9));
-        recommendedList.add(new ExtensionItem("Dark Reader", "addon@darkreader.org", "Dark mode for every website.", 4.8));
-        recommendedList.add(new ExtensionItem("Bitwarden", "{446900e4-71c2-419f-a6a7-df9c091e268b}", "Free Password Manager.", 4.7));
+        // ১৫টি এক্সটেনশন এখানে যোগ করা হলো (ID এবং আইকন সহ)
+        recommendedList.add(new ExtensionItem("uBlock Origin", "uBlock0@raymondhill.net", "An efficient blocker.", 4.9, "https://addons.mozilla.org/user-media/addon_icons/0/607-64.png"));
+        recommendedList.add(new ExtensionItem("Dark Reader", "addon@darkreader.org", "Dark mode for every website.", 4.8, "https://addons.mozilla.org/user-media/addon_icons/0/925-64.png"));
+        recommendedList.add(new ExtensionItem("Bitwarden", "{446900e4-71c2-419f-a6a7-df9c091e268b}", "Free Password Manager.", 4.7, "https://addons.mozilla.org/user-media/addon_icons/0/742-64.png"));
+        recommendedList.add(new ExtensionItem("Privacy Badger", "jid1-MnnxcxisBPnSXQ@jetpack", "Blocks invisible trackers.", 4.5, "https://addons.mozilla.org/user-media/addon_icons/0/506183-64.png"));
+        recommendedList.add(new ExtensionItem("SponsorBlock", "sponsorBlocker@ajay.app", "Skip YouTube Sponsors.", 4.6, "https://addons.mozilla.org/user-media/addon_icons/0/958334-64.png"));
+        recommendedList.add(new ExtensionItem("NoScript", "{73a6fe31-595d-460b-a920-fcc0f8843232}", "Allow/Block Scripts.", 4.3, "https://addons.mozilla.org/user-media/addon_icons/0/722-64.png"));
+        recommendedList.add(new ExtensionItem("Tampermonkey", "firefox@tampermonkey.net", "User Script Manager.", 4.6, "https://addons.mozilla.org/user-media/addon_icons/0/768-64.png"));
+        recommendedList.add(new ExtensionItem("LastPass", "support@lastpass.com", "Password Manager.", 4.2, "https://addons.mozilla.org/user-media/addon_icons/0/726-64.png"));
+        recommendedList.add(new ExtensionItem("AdGuard AdBlocker", "adguardadblocker@adguard.com", "Ads & Pop-ups Blocker.", 4.5, "https://addons.mozilla.org/user-media/addon_icons/0/468082-64.png"));
+        recommendedList.add(new ExtensionItem("Adblock Plus", "{d10d0bf8-f5b5-c8b4-a8b2-2b9879e08c5d}", "Popular Ad Blocker.", 4.4, "https://addons.mozilla.org/user-media/addon_icons/0/1865-64.png"));
+        recommendedList.add(new ExtensionItem("ClearURLs", "{74145f27-f039-47ce-a470-a662b129930a}", "Remove tracking from URLs.", 4.6, "https://addons.mozilla.org/user-media/addon_icons/0/850591-64.png"));
+        recommendedList.add(new ExtensionItem("Decentraleyes", "jid1-BoFifL9Vbdl2zQ@jetpack", "Local CDN Emulation.", 4.5, "https://addons.mozilla.org/user-media/addon_icons/0/666294-64.png"));
+        recommendedList.add(new ExtensionItem("User-Agent Switcher", "user-agent-switcher@ninetailed.ninja", "Change User Agent.", 4.2, "https://addons.mozilla.org/user-media/addon_icons/0/722284-64.png"));
+        recommendedList.add(new ExtensionItem("Stylus", "{7a7a4a92-a2a0-41d1-9fd7-1e92480d612d}", "Custom Website Themes.", 4.6, "https://addons.mozilla.org/user-media/addon_icons/0/818644-64.png"));
+        recommendedList.add(new ExtensionItem("I don't care about cookies", "jid1-KKzOGWgsW3Ao4Q@jetpack", "Hide Cookie Warnings.", 4.7, "https://addons.mozilla.org/user-media/addon_icons/0/453450-64.png"));
     }
 
     private void checkInstalledExtensions() {
@@ -66,18 +81,21 @@ public class ExtensionsActivity extends AppCompatActivity {
         });
     }
 
+    // Model Class
     class ExtensionItem {
-        String name, id, desc;
+        String name, id, desc, iconUrl;
         double rating;
 
-        ExtensionItem(String name, String id, String desc, double rating) {
+        ExtensionItem(String name, String id, String desc, double rating, String iconUrl) {
             this.name = name;
             this.id = id;
             this.desc = desc;
             this.rating = rating;
+            this.iconUrl = iconUrl;
         }
     }
 
+    // Adapter Class
     class ExtensionsAdapter extends RecyclerView.Adapter<ExtensionsAdapter.ViewHolder> {
 
         @NonNull
@@ -90,11 +108,17 @@ public class ExtensionsActivity extends AppCompatActivity {
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
             ExtensionItem item = recommendedList.get(position);
-            
+
             holder.name.setText(item.name);
             holder.desc.setText(item.desc);
             holder.rating.setText(String.valueOf(item.rating));
-            
+
+            // Glide ব্যবহার করে ছবি লোড করা হচ্ছে
+            Glide.with(ExtensionsActivity.this)
+                    .load(item.iconUrl)
+                    .placeholder(R.mipmap.ic_launcher)
+                    .into(holder.icon);
+
             boolean isInstalled = false;
             for (WebExtension ext : installedList) {
                 if (ext.id.equals(item.id)) {
@@ -113,7 +137,9 @@ public class ExtensionsActivity extends AppCompatActivity {
                 holder.btnAction.setBackgroundColor(Color.parseColor("#4CAF50"));
             }
 
-            holder.btnAction.setOnClickListener(v -> showInstallDialog(item));
+            holder.btnAction.setOnClickListener(v -> {
+                showInstallDialog(item);
+            });
         }
 
         @Override
@@ -155,7 +181,7 @@ public class ExtensionsActivity extends AppCompatActivity {
         dialog.show();
 
         btnCancel.setOnClickListener(v -> dialog.dismiss());
-        
+
         btnAdd.setOnClickListener(v -> {
             boolean allowPrivate = privateBrowsing.isChecked();
             startInstall(item, allowPrivate);
@@ -165,7 +191,7 @@ public class ExtensionsActivity extends AppCompatActivity {
 
     private void startInstall(ExtensionItem item, boolean privateBrowsing) {
         String url = "https://addons.mozilla.org/firefox/downloads/latest/" + item.id + "/latest.xpi";
-        
+
         MainActivity.runtime.getWebExtensionController().setPromptDelegate(new WebExtensionController.PromptDelegate() {
             @NonNull
             @Override
@@ -175,11 +201,11 @@ public class ExtensionsActivity extends AppCompatActivity {
         });
 
         MainActivity.runtime.getWebExtensionController().install(url).accept(
-            extension -> runOnUiThread(() -> {
-                Toast.makeText(this, item.name + " Installed!", Toast.LENGTH_SHORT).show();
-                checkInstalledExtensions();
-            }),
-            exception -> runOnUiThread(() -> Toast.makeText(this, "Failed to install", Toast.LENGTH_SHORT).show())
+                extension -> runOnUiThread(() -> {
+                    Toast.makeText(this, item.name + " Installed!", Toast.LENGTH_SHORT).show();
+                    checkInstalledExtensions();
+                }),
+                exception -> runOnUiThread(() -> Toast.makeText(this, "Failed to install", Toast.LENGTH_SHORT).show())
         );
     }
 }

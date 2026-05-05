@@ -1,90 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="12dp"
-    app:cardBackgroundColor="#2D2D2D"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="0dp">
+    android:orientation="horizontal"
+    android:padding="12dp"
+    android:gravity="center_vertical"
+    android:background="#FFFFFF">
+
+    <ImageView
+        android:id="@+id/extension_icon"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:scaleType="centerCrop"/>
 
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="16dp">
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:layout_marginStart="12dp">
 
-        <!-- এক্সটেনশন আইকন -->
-        <ImageView
-            android:id="@+id/extension_icon"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_gravity="center"
-            android:src="@mipmap/ic_launcher" />
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_weight="1"
-            android:orientation="vertical">
-
-            <!-- এক্সটেনশন নাম -->
-            <TextView
-                android:id="@+id/extension_name"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="uBlock Origin"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <!-- ডিসক্রিপশন -->
-            <TextView
-                android:id="@+id/extension_desc"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Blocks ads and trackers"
-                android:textColor="#B0B0B0"
-                android:textSize="13sp" />
-
-            <!-- রেটিং -->
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="★"
-                    android:textColor="#FFC107"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:id="@+id/extension_rating"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="4dp"
-                    android:text="4.8"
-                    android:textColor="#B0B0B0"
-                    android:textSize="12sp" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- অ্যাকশন বাটন (Add/Installed) -->
-        <Button
-            android:id="@+id/extension_btn_action"
+        <TextView
+            android:id="@+id/extension_name"
             android:layout_width="wrap_content"
-            android:layout_height="36dp"
-            android:layout_gravity="center"
-            android:backgroundTint="#4CAF50"
-            android:text="Add"
-            android:textAllCaps="false"
-            android:textColor="#FFFFFF"
-            android:textSize="12sp" />
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#000000"/>
+
+        <TextView
+            android:id="@+id/extension_desc"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:textColor="#666666"
+            android:maxLines="2"
+            android:ellipsize="end"/>
+
+        <TextView
+            android:id="@+id/extension_rating"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:textColor="#FF9800"
+            android:layout_marginTop="4dp"/>
 
     </LinearLayout>
-</androidx.cardview.widget.CardView>
+
+    <Button
+        android:id="@+id/extension_btn_action"
+        android:layout_width="wrap_content"
+        android:layout_height="36dp"
+        android:text="Add"
+        android:textColor="#FFFFFF"
+        android:backgroundTint="#4CAF50"
+        android:textAllCaps="false"/>
+
+</LinearLayout>
