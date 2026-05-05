@@ -10,10 +10,16 @@ import android.widget.ImageButton;
 import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.Toast;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+
+import org.mozilla.geckoview.GeckoResult;
 import org.mozilla.geckoview.GeckoRuntime;
 import org.mozilla.geckoview.GeckoSession;
 import org.mozilla.geckoview.GeckoView;
+import org.mozilla.geckoview.WebExtension;
+import org.mozilla.geckoview.WebExtensionController;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -44,6 +50,18 @@ public class MainActivity extends AppCompatActivity {
 
         if (runtime == null) {
             runtime = GeckoRuntime.create(this);
+            
+            // ১. অটোমেটিক পারমিশন এপ্রুভ করার ডেলিগেট সেট করা
+            runtime.getWebExtensionController().setPromptDelegate(new WebExtensionController.PromptDelegate() {
+                @Nullable
+                @Override
+                public GeckoResult<Integer> onInstallPrompt(@NonNull WebExtension extension) {
+                    // এখানে আমরা অটোমেটিক ইনস্টল কনফার্ম করছি
+                    return GeckoResult.fromValue(0); // 0 মানে Allow
+                }
+            });
+
+            // ২. এড ব্লকার ইনস্টল করা
             installAdBlocker();
         }
 
@@ -81,10 +99,10 @@ public class MainActivity extends AppCompatActivity {
 
     private void installAdBlocker() {
         String extensionUrl = "https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi";
+        
         runtime.getWebExtensionController().install(extensionUrl).accept(
             extension -> {
-                Log.d("PureWeb", "uBlock Origin Installed!");
-                // ইউজারকে জানানো হলো যে এড ব্লকার ইনস্টল হয়েছে
+                Log.d("PureWeb", "uBlock Origin Installed Successfully!");
                 runOnUiThread(() -> Toast.makeText(this, "Ad Blocker Active!", Toast.LENGTH_SHORT).show());
             },
             exception -> Log.e("PureWeb", "Extension failed: " + exception.getMessage())
@@ -131,7 +149,6 @@ public class MainActivity extends AppCompatActivity {
                     startActivity(Intent.createChooser(shareIntent, "Share URL"));
                     return true;
                 }
-                // History এবং Bookmark এর কাজ (এখন শুধু মেসেজ দেখাবে)
                 else if (id == R.id.menu_history) {
                     Toast.makeText(this, "History feature coming soon", Toast.LENGTH_SHORT).show();
                     return true;
