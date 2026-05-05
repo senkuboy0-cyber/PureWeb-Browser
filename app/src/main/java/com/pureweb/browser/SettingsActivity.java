@@ -1,8 +1,8 @@
 package com.pureweb.browser;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RadioButton;
@@ -23,7 +23,7 @@ public class SettingsActivity extends AppCompatActivity {
 
     private RadioGroup radioGroup;
     private RadioButton radioGoogle, radioDuckDuckGo, radioBing;
-    private Button btnClearCache, btnInstallAdBlocker, btnCustomExtension;
+    private Button btnClearCache, btnInstallAdBlocker, btnCustomExtension, btnOpenExtensions;
     private SharedPreferences prefs;
 
     @Override
@@ -37,7 +37,8 @@ public class SettingsActivity extends AppCompatActivity {
         radioBing = findViewById(R.id.radioBing);
         btnClearCache = findViewById(R.id.btnClearCache);
         btnInstallAdBlocker = findViewById(R.id.btnInstallAdBlocker);
-        btnCustomExtension = findViewById(R.id.btnCustomExtension); // নতুন বাটন
+        btnCustomExtension = findViewById(R.id.btnCustomExtension);
+        btnOpenExtensions = findViewById(R.id.btnOpenExtensions);
 
         prefs = getSharedPreferences("PureWebPrefs", MODE_PRIVATE);
 
@@ -48,7 +49,6 @@ public class SettingsActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // প্রতিবার সেটিংসে ঢুকলে চেক করবে এক্সটেনশন ইনস্টল আছে কি না
         checkIfExtensionInstalled();
     }
 
@@ -77,6 +77,10 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     private void setupButtons() {
+        btnOpenExtensions.setOnClickListener(v -> {
+            startActivity(new Intent(SettingsActivity.this, ExtensionsActivity.class));
+        });
+
         btnInstallAdBlocker.setOnClickListener(v -> {
             if (MainActivity.runtime != null) {
                 installExtension("https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi");
@@ -92,14 +96,12 @@ public class SettingsActivity extends AppCompatActivity {
         });
     }
 
-    // চেক করার লজিক
     private void checkIfExtensionInstalled() {
         if (MainActivity.runtime == null) return;
 
         MainActivity.runtime.getWebExtensionController().list().accept(extensions -> {
             boolean isInstalled = false;
             for (WebExtension ext : extensions) {
-                // uBlock এর আইডি বা নাম চেক করা
                 if (ext.metaData != null && ext.metaData.name != null && ext.metaData.name.contains("uBlock")) {
                     isInstalled = true;
                     break;
@@ -152,7 +154,7 @@ public class SettingsActivity extends AppCompatActivity {
         MainActivity.runtime.getWebExtensionController().install(url).accept(
             extension -> runOnUiThread(() -> {
                 Toast.makeText(this, "Extension Installed!", Toast.LENGTH_LONG).show();
-                checkIfExtensionInstalled(); // স্ট্যাটাস আপডেট করা
+                checkIfExtensionInstalled();
             }),
             exception -> runOnUiThread(() -> {
                 Toast.makeText(this, "Failed: " + exception.getMessage(), Toast.LENGTH_LONG).show();
@@ -162,7 +164,6 @@ public class SettingsActivity extends AppCompatActivity {
         );
     }
 
-    // কাস্টম এক্সটেনশন ইনস্টলের ডায়ালগ
     private void showCustomExtensionDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Install Custom Extension");
