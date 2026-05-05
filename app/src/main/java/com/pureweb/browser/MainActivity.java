@@ -76,14 +76,15 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // ফুলস্ক্রিন লজিক (ভিডিও বিকৃত না হওয়ার জন্য SENSOR ব্যবহার করা হলো)
+        // ফুলস্ক্রিন লজিক (বাটনে চাপ দিলে ল্যান্ডস্কেপ হবে)
         session.setContentDelegate(new GeckoSession.ContentDelegate() {
             @Override
             public void onFullScreen(GeckoSession session, boolean fullScreen) {
                 if (fullScreen) {
-                    // ফুলস্ক্রিনে গেলে অটো রোটেশন চালু করবে
-                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR);
+                    // ১. ফুলস্ক্রিনে ঢুকলে জোর করে ল্যান্ডস্কেপ (আড়াআড়ি) করা
+                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
                     
+                    // ২. সিস্টেম বার এবং নেভিগেশন লুকানো
                     getWindow().getDecorView().setSystemUiVisibility(
                             View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                             | View.SYSTEM_UI_FLAG_FULLSCREEN
@@ -92,14 +93,17 @@ public class MainActivity extends AppCompatActivity {
                             | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                             | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
                     
+                    // ৩. ব্রাউজারের টুলবার লুকানো
                     findViewById(R.id.topBar).setVisibility(View.GONE);
                     findViewById(R.id.bottomNav).setVisibility(View.GONE);
                 } else {
-                    // নরমাল মোডে এলে আবার পোর্ট্রেটে ফিরিয়ে আনবে
+                    // ১. ফুলস্ক্রিন থেকে বের হলে জোর করে পোর্ট্রেট (খাড়া) করা
                     setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
                     
+                    // ২. সিস্টেম বার ফিরিয়ে আনা
                     getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
                     
+                    // ৩. ব্রাউজারের টুলবার দেখানো
                     findViewById(R.id.topBar).setVisibility(View.VISIBLE);
                     findViewById(R.id.bottomNav).setVisibility(View.VISIBLE);
                 }
