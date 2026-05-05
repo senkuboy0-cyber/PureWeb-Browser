@@ -50,12 +50,12 @@
         android:background="#E0E0E0"
         android:layout_marginVertical="20dp"/>
 
-    <!-- নতুন এড ব্লকার বাটন -->
+    <!-- uBlock Origin Install Button -->
     <Button
         android:id="@+id/btnInstallAdBlocker"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Install Ad Blocker"
+        android:text="Install uBlock Origin"
         android:backgroundTint="#4CAF50"
         android:textAllCaps="false"/>
 
