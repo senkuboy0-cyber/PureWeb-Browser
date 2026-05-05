@@ -50,11 +50,21 @@
         android:background="#E0E0E0"
         android:layout_marginVertical="20dp"/>
 
+    <!-- Open Extension Store Button -->
+    <Button
+        android:id="@+id/btnOpenExtensions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Open Extension Store"
+        android:backgroundTint="#2196F3"
+        android:textAllCaps="false"/>
+
     <!-- uBlock Origin Install Button -->
     <Button
         android:id="@+id/btnInstallAdBlocker"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
         android:text="Install uBlock Origin"
         android:backgroundTint="#4CAF50"
         android:textAllCaps="false"/>
