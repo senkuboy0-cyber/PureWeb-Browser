@@ -112,7 +112,6 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.root_layout).getViewTreeObserver()
             .addOnGlobalLayoutListener(() -> {
                 if (isFullScreenMode) return;
-
                 android.graphics.Rect r = new android.graphics.Rect();
                 getWindow().getDecorView().getWindowVisibleDisplayFrame(r);
                 int screenHeight = getWindow().getDecorView().getHeight();
