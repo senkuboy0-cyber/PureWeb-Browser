@@ -111,7 +111,6 @@ public class MainActivity extends AppCompatActivity {
         View bottomNav = findViewById(R.id.bottomNav);
         findViewById(R.id.root_layout).getViewTreeObserver()
             .addOnGlobalLayoutListener(() -> {
-                // যদি ফুলস্ক্রিন মোডে থাকে, তবে বটম ন্যাভ লুকাই থাকবে, কোড এখানে আসবে না
                 if (isFullScreenMode) return;
 
                 android.graphics.Rect r = new android.graphics.Rect();
@@ -141,7 +140,6 @@ public class MainActivity extends AppCompatActivity {
                 String input = urlBar.getText().toString().trim();
                 loadUrlOrSearch(input);
                 
-                // সার্চ দেওয়ার পর কিবোর্ড অটোমেটিক বন্ধ করা
                 InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                 imm.hideSoftInputFromWindow(urlBar.getWindowToken(), 0);
                 
@@ -176,28 +174,10 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(this, "Bookmark feature coming soon", Toast.LENGTH_SHORT).show();
                     return true;
                 } else if (id == R.id.menu_devtools) {
-                    // এই স্ক্রিপ্টটি Eruda লোড করবে এবং ফ্লোটিং আইকনটি লুকিয়ে দেবে
-                    String erudaScript = "javascript: (" +
-                        "function() { " +
-                        "   if (window.eruda) { " +
-                        "       eruda.show(); " +
-                        "       return; " +
-                        "   } " +
-                        "   var script = document.createElement('script'); " +
-                        "   script.src = 'https://cdn.jsdelivr.net/npm/eruda'; " +
-                        "   document.body.appendChild(script); " +
-                        "   script.onload = function() { " +
-                        "       eruda.init(); " +
-                        "       eruda.show(); " +
-                        "       // ফ্লোটিং গিয়ার আইকনটি সবসময় লুকিয়ে রাখার জন্য CSS ইনজেকশন
-                        "       var style = document.createElement('style'); " +
-                        "       style.innerHTML = '.eruda-entry-btn { display: none !important; }'; " +
-                        "       document.head.appendChild(style); " +
-                        "   }; " +
-                        "}" +
-                        ")()";
-
+                    // এই স্ক্রিপ্টটি Eruda লোড করবে, ওপেন করবে এবং ফ্লোটিং আইকনটি লুকিয়ে দেবে
+                    String erudaScript = "javascript:(function(){if(window.eruda){eruda.show();return;}var script=document.createElement('script');script.src='https://cdn.jsdelivr.net/npm/eruda';document.body.appendChild(script);script.onload=function(){eruda.init();eruda.show();var style=document.createElement('style');style.innerHTML='.eruda-entry-btn{display:none!important}';document.head.appendChild(style);};})();";
                     session.loadUri(erudaScript);
+                    Toast.makeText(this, "DevTools Opening...", Toast.LENGTH_SHORT).show();
                     return true;
                 }
                 return false;
