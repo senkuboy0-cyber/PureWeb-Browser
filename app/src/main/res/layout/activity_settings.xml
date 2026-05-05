@@ -50,10 +50,20 @@
         android:background="#E0E0E0"
         android:layout_marginVertical="20dp"/>
 
+    <!-- নতুন এড ব্লকার বাটন -->
+    <Button
+        android:id="@+id/btnInstallAdBlocker"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Install Ad Blocker"
+        android:backgroundTint="#4CAF50"
+        android:textAllCaps="false"/>
+
     <Button
         android:id="@+id/btnClearCache"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
         android:text="Clear Browsing Data"
         android:backgroundTint="#F44336"/>
 

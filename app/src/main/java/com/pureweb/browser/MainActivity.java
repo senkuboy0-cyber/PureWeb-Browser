@@ -10,22 +10,18 @@ import android.widget.ImageButton;
 import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.Toast;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-
-import org.mozilla.geckoview.GeckoResult;
 import org.mozilla.geckoview.GeckoRuntime;
 import org.mozilla.geckoview.GeckoSession;
 import org.mozilla.geckoview.GeckoView;
-import org.mozilla.geckoview.WebExtension;
-import org.mozilla.geckoview.WebExtensionController;
 
 public class MainActivity extends AppCompatActivity {
 
     private GeckoView geckoView;
     private GeckoSession session;
-    private GeckoRuntime runtime;
+    // এটি static করা হলো যাতে SettingsActivity থেকে ব্যবহার করা যায়
+    public static GeckoRuntime runtime;
+    
     private EditText urlBar;
     private ProgressBar progressBar;
     private SharedPreferences prefs;
@@ -50,19 +46,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (runtime == null) {
             runtime = GeckoRuntime.create(this);
-            
-            // ১. অটোমেটিক পারমিশন এপ্রুভ করার ডেলিগেট সেট করা
-            runtime.getWebExtensionController().setPromptDelegate(new WebExtensionController.PromptDelegate() {
-                @Nullable
-                @Override
-                public GeckoResult<Integer> onInstallPrompt(@NonNull WebExtension extension) {
-                    // এখানে আমরা অটোমেটিক ইনস্টল কনফার্ম করছি
-                    return GeckoResult.fromValue(0); // 0 মানে Allow
-                }
-            });
-
-            // ২. এড ব্লকার ইনস্টল করা
-            installAdBlocker();
+            // এখানে আর অটো ইনস্টল করব না
         }
 
         session = new GeckoSession();
@@ -97,18 +81,6 @@ public class MainActivity extends AppCompatActivity {
         setupMenuButton();
     }
 
-    private void installAdBlocker() {
-        String extensionUrl = "https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi";
-        
-        runtime.getWebExtensionController().install(extensionUrl).accept(
-            extension -> {
-                Log.d("PureWeb", "uBlock Origin Installed Successfully!");
-                runOnUiThread(() -> Toast.makeText(this, "Ad Blocker Active!", Toast.LENGTH_SHORT).show());
-            },
-            exception -> Log.e("PureWeb", "Extension failed: " + exception.getMessage())
-        );
-    }
-
     private void setupNavigationButtons() {
         btnBack.setOnClickListener(v -> session.goBack());
         btnForward.setOnClickListener(v -> session.goForward());
@@ -133,27 +105,22 @@ public class MainActivity extends AppCompatActivity {
             popup.getMenuInflater().inflate(R.menu.browser_menu, popup.getMenu());
             popup.setOnMenuItemClickListener(item -> {
                 int id = item.getItemId();
-                
                 if (id == R.id.menu_settings) {
                     startActivity(new Intent(MainActivity.this, SettingsActivity.class));
                     return true;
-                } 
-                else if (id == R.id.menu_refresh) {
+                } else if (id == R.id.menu_refresh) {
                     session.reload();
                     return true;
-                } 
-                else if (id == R.id.menu_share) {
+                } else if (id == R.id.menu_share) {
                     Intent shareIntent = new Intent(Intent.ACTION_SEND);
                     shareIntent.setType("text/plain");
                     shareIntent.putExtra(Intent.EXTRA_TEXT, urlBar.getText().toString());
                     startActivity(Intent.createChooser(shareIntent, "Share URL"));
                     return true;
-                }
-                else if (id == R.id.menu_history) {
+                } else if (id == R.id.menu_history) {
                     Toast.makeText(this, "History feature coming soon", Toast.LENGTH_SHORT).show();
                     return true;
-                }
-                else if (id == R.id.menu_bookmark) {
+                } else if (id == R.id.menu_bookmark) {
                     Toast.makeText(this, "Bookmark feature coming soon", Toast.LENGTH_SHORT).show();
                     return true;
                 }

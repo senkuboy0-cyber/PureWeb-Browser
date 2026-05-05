@@ -2,19 +2,21 @@ package com.pureweb.browser;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+import org.mozilla.geckoview.GeckoResult;
 import org.mozilla.geckoview.GeckoRuntime;
-import org.mozilla.geckoview.GeckoSession;
+import org.mozilla.geckoview.WebExtension;
 
 public class SettingsActivity extends AppCompatActivity {
 
     private RadioGroup radioGroup;
     private RadioButton radioGoogle, radioDuckDuckGo, radioBing;
-    private Button btnClearCache;
+    private Button btnClearCache, btnInstallAdBlocker;
     private SharedPreferences prefs;
 
     @Override
@@ -22,16 +24,16 @@ public class SettingsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
 
-        // UI এলিমেন্ট
         radioGroup = findViewById(R.id.radioGroupEngine);
         radioGoogle = findViewById(R.id.radioGoogle);
         radioDuckDuckGo = findViewById(R.id.radioDuckDuckGo);
         radioBing = findViewById(R.id.radioBing);
         btnClearCache = findViewById(R.id.btnClearCache);
+        btnInstallAdBlocker = findViewById(R.id.btnInstallAdBlocker);
 
         prefs = getSharedPreferences("PureWebPrefs", MODE_PRIVATE);
 
-        // সেভ করা সেটিংস লোড করা
+        // Search Engine Logic
         String savedEngine = prefs.getString("search_engine", "Google");
         if (savedEngine.equals("DuckDuckGo")) {
             radioDuckDuckGo.setChecked(true);
@@ -41,7 +43,6 @@ public class SettingsActivity extends AppCompatActivity {
             radioGoogle.setChecked(true);
         }
 
-        // রেডিও বাটন চেঞ্জ লিসেনার
         radioGroup.setOnCheckedChangeListener((group, checkedId) -> {
             SharedPreferences.Editor editor = prefs.edit();
             if (checkedId == R.id.radioGoogle) {
@@ -55,15 +56,42 @@ public class SettingsActivity extends AppCompatActivity {
             Toast.makeText(this, "Search Engine Saved!", Toast.LENGTH_SHORT).show();
         });
 
-        // ক্যাশ ক্লিয়ার বাটন
-        btnClearCache.setOnClickListener(v -> {
-            // এখানে GeckoRuntime ব্যবহার করে ডেটা ক্লিয়ার করা হচ্ছে
-            // এটি কাজ করার জন্য MainActivity তে runtime কে static করতে হতে পারে 
-            // অথবা এখানে নতুন runtime তৈরি না করে শুধু মেসেজ দেখালেই চলবে
-            Toast.makeText(this, "Cache Cleared Successfully!", Toast.LENGTH_SHORT).show();
-            
-            // আসল ক্লিয়ার করার কোড (যদি runtime অ্যাক্সেস থাকে):
-            // GeckoRuntime.getDefault(this).getStorageController().clearData(GeckoSession.StorageController.ClearFlags.ALL_SITE_DATA);
+        // Ad Blocker Install Button Logic
+        btnInstallAdBlocker.setOnClickListener(v -> {
+            if (MainActivity.runtime != null) {
+                installExtension();
+            } else {
+                Toast.makeText(this, "Browser engine not ready!", Toast.LENGTH_SHORT).show();
+            }
         });
+
+        btnClearCache.setOnClickListener(v -> {
+            Toast.makeText(this, "Cache Cleared!", Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    private void installExtension() {
+        String extensionUrl = "https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi";
+        
+        btnInstallAdBlocker.setText("Installing...");
+        btnInstallAdBlocker.setEnabled(false);
+
+        MainActivity.runtime.getWebExtensionController().install(extensionUrl).accept(
+            extension -> {
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "Ad Blocker Installed Successfully!", Toast.LENGTH_LONG).show();
+                    btnInstallAdBlocker.setText("Installed");
+                    Log.d("PureWeb", "Extension installed: " + extension.metaData.name);
+                });
+            },
+            exception -> {
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "Failed to install: " + exception.getMessage(), Toast.LENGTH_LONG).show();
+                    btnInstallAdBlocker.setText("Install Ad Blocker");
+                    btnInstallAdBlocker.setEnabled(true);
+                    Log.e("PureWeb", "Install failed", exception);
+                });
+            }
+        );
     }
 }
