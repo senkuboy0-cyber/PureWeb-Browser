@@ -110,6 +110,27 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        // কিবোর্ড ওপেন হলে পেজ অটোমেটিক উপরে তোলার জন্য
+        findViewById(R.id.main_layout).getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            if (geckoView != null && geckoView.getHeight() > 0) {
+                // স্ক্রিনের বর্তমান ভিসিবল এরিয়া বের করা
+                android.graphics.Rect rect = new android.graphics.Rect();
+                findViewById(R.id.main_layout).getWindowVisibleDisplayFrame(rect);
+                
+                int screenHeight = findViewById(R.id.main_layout).getRootView().getHeight();
+                int keypadHeight = screenHeight - rect.bottom;
+
+                // যদি কিবোর্ড ওপেন থাকে (height > screen এর ১৫%)
+                if (keypadHeight > screenHeight * 0.15) {
+                    // GeckoView কে বলা হলো যে নিচে কিবোর্ড আছে, পেজ উপরে সরাও
+                    geckoView.setVerticalClipping(keypadHeight);
+                } else {
+                    // কিবোর্ড বন্ধ থাকলে আগের অবস্থায় ফেরত
+                    geckoView.setVerticalClipping(0);
+                }
+            }
+        });
+
         loadHomePage();
         setupNavigationButtons();
         setupUrlBar();
@@ -129,7 +150,7 @@ public class MainActivity extends AppCompatActivity {
                 String input = urlBar.getText().toString().trim();
                 loadUrlOrSearch(input);
                 
-                // ২. সার্চ দেওয়ার পর কিবোর্ড অটোমেটিক বন্ধ করা
+                // সার্চ দেওয়ার পর কিবোর্ড অটোমেটিক বন্ধ করা
                 InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                 imm.hideSoftInputFromWindow(urlBar.getWindowToken(), 0);
                 
