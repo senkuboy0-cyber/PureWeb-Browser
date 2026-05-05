@@ -7,6 +7,7 @@ import android.widget.Button;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.Toast;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -79,19 +80,31 @@ public class SettingsActivity extends AppCompatActivity {
         btnInstallAdBlocker.setText("Installing...");
         btnInstallAdBlocker.setEnabled(false);
 
-        // PromptDelegate সেট করা
-        // এখানে @Override এবং @NonNull সরিয়ে দেওয়া হয়েছে যাতে এরর না আসে
+        // নতুন API অনুযায়ী সেটআপ
         MainActivity.runtime.getWebExtensionController().setPromptDelegate(new WebExtensionController.PromptDelegate() {
-            public GeckoResult<Integer> onInstallPrompt(WebExtension extension) {
-                final GeckoResult<Integer> result = new GeckoResult<>();
+            @NonNull
+            @Override
+            public GeckoResult<WebExtension.PermissionPromptResponse> onInstallPromptRequest(
+                    @NonNull WebExtension extension,
+                    @NonNull String[] permissions,
+                    @NonNull String[] origins,
+                    @NonNull String[] dataCollectionPermissions) {
+                
+                final GeckoResult<WebExtension.PermissionPromptResponse> result = new GeckoResult<>();
 
                 runOnUiThread(() -> {
                     new AlertDialog.Builder(SettingsActivity.this)
                         .setTitle("Install uBlock Origin?")
-                        .setMessage("Do you want to install this extension to block ads?")
-                        .setPositiveButton("Allow", (dialog, which) -> result.complete(0))
-                        .setNegativeButton("Cancel", (dialog, which) -> result.complete(1))
-                        .setOnCancelListener(dialog -> result.complete(1))
+                        .setMessage("This extension needs permissions to block ads and trackers.")
+                        .setPositiveButton("Allow", (dialog, which) -> {
+                            // ইউজার Allow করলে ALLOW রেসপন্স পাঠাবে
+                            result.complete(WebExtension.PermissionPromptResponse.Allow());
+                        })
+                        .setNegativeButton("Cancel", (dialog, which) -> {
+                            // ইউজার Cancel করলে DENY রেসপন্স পাঠাবে
+                            result.complete(WebExtension.PermissionPromptResponse.Deny());
+                        })
+                        .setOnCancelListener(dialog -> result.complete(WebExtension.PermissionPromptResponse.Deny()))
                         .show();
                 });
 
