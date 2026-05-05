@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -15,6 +14,9 @@ import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.ViewCompat;
 import org.mozilla.geckoview.GeckoRuntime;
 import org.mozilla.geckoview.GeckoSession;
 import org.mozilla.geckoview.GeckoView;
@@ -105,35 +107,29 @@ public class MainActivity extends AppCompatActivity {
         setupUrlBar();
         setupMenuButton();
 
-        // কিবোর্ড ওপেন হলে পেজের ইনপুট বক্স ঠিকমতো উপরে তোলার কোড
-        findViewById(R.id.root_layout).getViewTreeObserver().addOnGlobalLayoutListener(() -> {
-            if (geckoView == null) return;
-            
-            android.graphics.Rect r = new android.graphics.Rect();
-            getWindow().getDecorView().getWindowVisibleDisplayFrame(r);
-            
-            int screenHeight = getWindow().getDecorView().getRootView().getHeight();
-            int keypadHeight = screenHeight - r.bottom;
+        // Step 1: window কে বলো insets নিজে handle করবে না
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
-            // নিচের নেভিগেশন বারের উচ্চতা বের করা
-            int bottomNavHeight = 0;
-            View bottomNav = findViewById(R.id.bottomNav);
-            if (bottomNav != null && bottomNav.getVisibility() == View.VISIBLE) {
-                bottomNavHeight = bottomNav.getHeight();
-            }
+        // Step 2: GeckoView এর উপরেই insets listener বসাও
+        ViewCompat.setOnApplyWindowInsetsListener(
+            geckoView, (v, insets) -> {
 
-            // যদি কিবোর্ড ওপেন থাকে
-            if (keypadHeight > screenHeight * 0.15) {
-                // জিওকভিউকে বলা হলো নিচে কিবোর্ড আছে। 
-                // কিন্তু আমরা BottomNav এর উচ্চতা বাদ দিয়ে দিচ্ছি কারণ ওটাও তো কিবোর্ডের নিচে চলে গেছে।
-                int clippingHeight = keypadHeight - bottomNavHeight;
-                
-                // যদি ক্লিপিং নেগেটিভ হয়ে যায় তবে ০ করব
-                geckoView.setVerticalClipping(Math.max(0, clippingHeight));
-            } else {
-                geckoView.setVerticalClipping(0);
+                // keyboard এর height বের করো
+                int imeHeight = insets.getInsets(
+                    WindowInsetsCompat.Type.ime()
+                ).bottom;
+
+                // system navigation bar height বাদ দাও
+                int sysNavHeight = insets.getInsets(
+                    WindowInsetsCompat.Type.systemBars()
+                ).bottom;
+
+                // GeckoView কে বলো কতটুকু নিচে ঢাকা আছে
+                geckoView.setVerticalClipping(Math.max(0, imeHeight - sysNavHeight));
+
+                return insets;
             }
-        });
+        );
     }
 
     private void setupNavigationButtons() {
@@ -174,7 +170,7 @@ public class MainActivity extends AppCompatActivity {
                 } else if (id == R.id.menu_share) {
                     Intent shareIntent = new Intent(Intent.ACTION_SEND);
                     shareIntent.setType("text/plain");
-                    shareIntent.putExtra(Intent.EXTRA_TEXT, urlBar.getText().toString());
+                    shareIntent.setExtra(Intent.EXTRA_TEXT, urlBar.getText().toString());
                     startActivity(Intent.createChooser(shareIntent, "Share URL"));
                     return true;
                 } else if (id == R.id.menu_history) {
