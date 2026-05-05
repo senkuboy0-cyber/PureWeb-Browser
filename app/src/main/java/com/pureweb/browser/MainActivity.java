@@ -28,6 +28,7 @@ public class MainActivity extends AppCompatActivity {
     private SharedPreferences prefs;
     private ImageButton btnBack, btnForward, btnHome, btnRefresh, menuBtn;
     private boolean canGoBack = false;
+    private boolean isFullScreenMode = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,6 +80,8 @@ public class MainActivity extends AppCompatActivity {
         session.setContentDelegate(new GeckoSession.ContentDelegate() {
             @Override
             public void onFullScreen(GeckoSession session, boolean fullScreen) {
+                isFullScreenMode = fullScreen;
+                
                 if (fullScreen) {
                     setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
                     getWindow().getDecorView().setSystemUiVisibility(
@@ -104,18 +107,24 @@ public class MainActivity extends AppCompatActivity {
         setupUrlBar();
         setupMenuButton();
 
+        // কিবোর্ড ওপেন হলে বটম ন্যাভ লুকানো
         View bottomNav = findViewById(R.id.bottomNav);
-
         findViewById(R.id.root_layout).getViewTreeObserver()
             .addOnGlobalLayoutListener(() -> {
+                // যদি ফুলস্ক্রিন মোডে থাকে, তবে বটম ন্যাভ লুকাই থাকবে, কোড এখানে আসবে না
+                if (isFullScreenMode) return;
+
                 android.graphics.Rect r = new android.graphics.Rect();
                 getWindow().getDecorView().getWindowVisibleDisplayFrame(r);
                 int screenHeight = getWindow().getDecorView().getHeight();
                 int keyboardHeight = screenHeight - r.bottom;
-                bottomNav.setVisibility(
-                    keyboardHeight > screenHeight * 0.15
-                    ? View.GONE : View.VISIBLE
-                );
+                
+                if (bottomNav != null) {
+                    bottomNav.setVisibility(
+                        keyboardHeight > screenHeight * 0.15
+                        ? View.GONE : View.VISIBLE
+                    );
+                }
             });
     }
 
@@ -167,14 +176,17 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(this, "Bookmark feature coming soon", Toast.LENGTH_SHORT).show();
                     return true;
                 } else if (id == R.id.menu_devtools) {
-                    String eruda = "javascript:(function(){" +
+                    // 'javascript:' প্রিফিক্সটি সরিয়ে দিন, কারণ evaluateJavascript এটি চায় না
+                    String erudaScript = "(function(){" +
                         "if(window.eruda){eruda.show();return;}" +
                         "var s=document.createElement('script');" +
                         "s.src='https://cdn.jsdelivr.net/npm/eruda';" +
                         "document.head.appendChild(s);" +
                         "s.onload=function(){eruda.init();};" +
                         "})();";
-                    session.loadUri(eruda);
+                    
+                    // loadUri এর বদলে evaluateJavascript ব্যবহার করুন
+                    session.evaluateJavascript(erudaScript, null);
                     return true;
                 }
                 return false;
