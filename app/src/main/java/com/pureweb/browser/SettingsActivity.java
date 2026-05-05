@@ -7,8 +7,6 @@ import android.widget.Button;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.Toast;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -81,20 +79,18 @@ public class SettingsActivity extends AppCompatActivity {
         btnInstallAdBlocker.setText("Installing...");
         btnInstallAdBlocker.setEnabled(false);
 
-        // ১. প্রম্পট ডেলিগেট সেট করা (যাতে পারমিশন চাইলে ডায়ালগ দেখায়)
+        // PromptDelegate সেট করা
+        // এখানে @Override এবং @NonNull সরিয়ে দেওয়া হয়েছে যাতে এরর না আসে
         MainActivity.runtime.getWebExtensionController().setPromptDelegate(new WebExtensionController.PromptDelegate() {
-            @Nullable
-            @Override
-            public GeckoResult<Integer> onInstallPrompt(@NonNull WebExtension extension) {
+            public GeckoResult<Integer> onInstallPrompt(WebExtension extension) {
                 final GeckoResult<Integer> result = new GeckoResult<>();
 
-                // মেইন থ্রেডে ডায়ালগ দেখানো
                 runOnUiThread(() -> {
                     new AlertDialog.Builder(SettingsActivity.this)
                         .setTitle("Install uBlock Origin?")
-                        .setMessage("This extension needs permission to block ads and trackers. Do you want to allow?")
-                        .setPositiveButton("Allow", (dialog, which) -> result.complete(0)) // 0 = Allow
-                        .setNegativeButton("Cancel", (dialog, which) -> result.complete(1)) // 1 = Deny
+                        .setMessage("Do you want to install this extension to block ads?")
+                        .setPositiveButton("Allow", (dialog, which) -> result.complete(0))
+                        .setNegativeButton("Cancel", (dialog, which) -> result.complete(1))
                         .setOnCancelListener(dialog -> result.complete(1))
                         .show();
                 });
@@ -103,21 +99,19 @@ public class SettingsActivity extends AppCompatActivity {
             }
         });
 
-        // ২. ইনস্টলেশন শুরু
+        // ইনস্টলেশন শুরু
         MainActivity.runtime.getWebExtensionController().install(extensionUrl).accept(
             extension -> {
                 runOnUiThread(() -> {
                     Toast.makeText(this, "uBlock Origin Installed!", Toast.LENGTH_LONG).show();
-                    btnInstallAdBlocker.setText("Installed Successfully");
-                    Log.d("PureWeb", "Extension installed: " + extension.metaData.name);
+                    btnInstallAdBlocker.setText("Installed");
                 });
             },
             exception -> {
                 runOnUiThread(() -> {
-                    Toast.makeText(this, "Install Failed: " + exception.getMessage(), Toast.LENGTH_LONG).show();
-                    btnInstallAdBlocker.setText("Install uBlock Origin"); // রিসেট করা
+                    Toast.makeText(this, "Failed: " + exception.getMessage(), Toast.LENGTH_LONG).show();
+                    btnInstallAdBlocker.setText("Install uBlock Origin");
                     btnInstallAdBlocker.setEnabled(true);
-                    Log.e("PureWeb", "Install failed", exception);
                 });
             }
         );
