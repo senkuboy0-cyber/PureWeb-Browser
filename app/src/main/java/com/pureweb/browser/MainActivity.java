@@ -106,19 +106,20 @@ public class MainActivity extends AppCompatActivity {
         setupUrlBar();
         setupMenuButton();
 
-        // GeckoView এর উপরেই insets listener বসাও
-        ViewCompat.setOnApplyWindowInsetsListener(geckoView, (v, insets) -> {
-            int imeHeight = insets.getInsets(
-                WindowInsetsCompat.Type.ime()
-            ).bottom;
+        View bottomNav = findViewById(R.id.bottomNav);
 
-            View bottomNav = findViewById(R.id.bottomNav);
-            int bottomNavH = bottomNav != null ? bottomNav.getHeight() : 0;
-
-            // GeckoView এর নিচে bottomNav আছে, তাই ওটা বাদ দিতে হবে
-            geckoView.setVerticalClipping(Math.max(0, imeHeight - bottomNavH));
-            return insets;
-        });
+        ViewCompat.setOnApplyWindowInsetsListener(
+            findViewById(R.id.root_layout), (v, insets) -> {
+                boolean imeVisible = insets.isVisible(
+                    WindowInsetsCompat.Type.ime()
+                );
+                // keyboard খুললে bottom nav লুকাও, বন্ধ হলে দেখাও
+                bottomNav.setVisibility(
+                    imeVisible ? View.GONE : View.VISIBLE
+                );
+                return insets;
+            }
+        );
     }
 
     private void setupNavigationButtons() {
