@@ -105,23 +105,32 @@ public class MainActivity extends AppCompatActivity {
         setupUrlBar();
         setupMenuButton();
 
-        // কিবোর্ড ওপেন হলে পেজের ইনপুট বক্স কিবোর্ডের উপরে নিয়ে আসার কোড
+        // কিবোর্ড ওপেন হলে পেজের ইনপুট বক্স ঠিকমতো উপরে তোলার কোড
         findViewById(R.id.root_layout).getViewTreeObserver().addOnGlobalLayoutListener(() -> {
             if (geckoView == null) return;
             
             android.graphics.Rect r = new android.graphics.Rect();
-            // স্ক্রিনের কতটুকু জায়গা ভিসিবল আছে তা বের করা হচ্ছে
             getWindow().getDecorView().getWindowVisibleDisplayFrame(r);
             
             int screenHeight = getWindow().getDecorView().getRootView().getHeight();
             int keypadHeight = screenHeight - r.bottom;
 
-            // যদি কিবোর্ড ওপেন থাকে (স্ক্রিনের ১৫% এর বেশি জায়গা নিয়েছে কি না চেক করা)
+            // নিচের নেভিগেশন বারের উচ্চতা বের করা
+            int bottomNavHeight = 0;
+            View bottomNav = findViewById(R.id.bottomNav);
+            if (bottomNav != null && bottomNav.getVisibility() == View.VISIBLE) {
+                bottomNavHeight = bottomNav.getHeight();
+            }
+
+            // যদি কিবোর্ড ওপেন থাকে
             if (keypadHeight > screenHeight * 0.15) {
-                // GeckoView কে বলা হলো নিচে কিবোর্ড আছে, পেজটি উপরে সরাও
-                geckoView.setVerticalClipping(keypadHeight);
+                // জিওকভিউকে বলা হলো নিচে কিবোর্ড আছে। 
+                // কিন্তু আমরা BottomNav এর উচ্চতা বাদ দিয়ে দিচ্ছি কারণ ওটাও তো কিবোর্ডের নিচে চলে গেছে।
+                int clippingHeight = keypadHeight - bottomNavHeight;
+                
+                // যদি ক্লিপিং নেগেটিভ হয়ে যায় তবে ০ করব
+                geckoView.setVerticalClipping(Math.max(0, clippingHeight));
             } else {
-                // কিবোর্ড বন্ধ থাকলে আগের অবস্থায় ফেরত
                 geckoView.setVerticalClipping(0);
             }
         });
