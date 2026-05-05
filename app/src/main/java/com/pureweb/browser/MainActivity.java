@@ -75,7 +75,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // ফুলস্ক্রিন লজিক (বাটনে চাপ দিলে ল্যান্ডস্কেপ হবে)
+        // ফুলস্ক্রিন লজিক
         session.setContentDelegate(new GeckoSession.ContentDelegate() {
             @Override
             public void onFullScreen(GeckoSession session, boolean fullScreen) {
@@ -165,6 +165,16 @@ public class MainActivity extends AppCompatActivity {
                     return true;
                 } else if (id == R.id.menu_bookmark) {
                     Toast.makeText(this, "Bookmark feature coming soon", Toast.LENGTH_SHORT).show();
+                    return true;
+                } else if (id == R.id.menu_devtools) {
+                    String eruda = "javascript:(function(){" +
+                        "if(window.eruda){eruda.show();return;}" +
+                        "var s=document.createElement('script');" +
+                        "s.src='https://cdn.jsdelivr.net/npm/eruda';" +
+                        "document.head.appendChild(s);" +
+                        "s.onload=function(){eruda.init();};" +
+                        "})();";
+                    session.loadUri(eruda);
                     return true;
                 }
                 return false;
