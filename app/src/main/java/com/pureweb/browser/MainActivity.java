@@ -1,10 +1,14 @@
 package com.pureweb.browser;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.PopupMenu;
@@ -20,7 +24,6 @@ public class MainActivity extends AppCompatActivity {
     private GeckoView geckoView;
     private GeckoSession session;
     public static GeckoRuntime runtime;
-    
     private EditText urlBar;
     private ProgressBar progressBar;
     private SharedPreferences prefs;
@@ -51,34 +54,6 @@ public class MainActivity extends AppCompatActivity {
         session.open(runtime);
         geckoView.setSession(session);
 
-        // ContentDelegate - ফুলস্ক্রিন ভিডিও ফিক্স
-        session.setContentDelegate(new GeckoSession.ContentDelegate() {
-            @Override
-            public void onFullScreen(GeckoSession session, boolean fullScreen) {
-                if (fullScreen) {
-                    // ফুলস্ক্রিনে যাওয়ার জন্য সিস্টেম UI লুকানো
-                    getWindow().getDecorView().setSystemUiVisibility(
-                            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                            | View.SYSTEM_UI_FLAG_FULLSCREEN
-                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
-                    
-                    // টুলবার লুকানো
-                    findViewById(R.id.topBar).setVisibility(View.GONE);
-                    findViewById(R.id.bottomNav).setVisibility(View.GONE);
-                } else {
-                    // নরমাল মোডে ফিরে আসা
-                    getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
-                    
-                    // টুলবার দেখানো
-                    findViewById(R.id.topBar).setVisibility(View.VISIBLE);
-                    findViewById(R.id.bottomNav).setVisibility(View.VISIBLE);
-                }
-            }
-        });
-
         session.setNavigationDelegate(new GeckoSession.NavigationDelegate() {
             @Override
             public void onCanGoBack(GeckoSession session, boolean canGoBack) {
@@ -101,6 +76,36 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        // ফুলস্ক্রিন লজিক (ভিডিও বিকৃত না হওয়ার জন্য SENSOR ব্যবহার করা হলো)
+        session.setContentDelegate(new GeckoSession.ContentDelegate() {
+            @Override
+            public void onFullScreen(GeckoSession session, boolean fullScreen) {
+                if (fullScreen) {
+                    // ফুলস্ক্রিনে গেলে অটো রোটেশন চালু করবে
+                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR);
+                    
+                    getWindow().getDecorView().setSystemUiVisibility(
+                            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                            | View.SYSTEM_UI_FLAG_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+                    
+                    findViewById(R.id.topBar).setVisibility(View.GONE);
+                    findViewById(R.id.bottomNav).setVisibility(View.GONE);
+                } else {
+                    // নরমাল মোডে এলে আবার পোর্ট্রেটে ফিরিয়ে আনবে
+                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                    
+                    getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+                    
+                    findViewById(R.id.topBar).setVisibility(View.VISIBLE);
+                    findViewById(R.id.bottomNav).setVisibility(View.VISIBLE);
+                }
+            }
+        });
+
         loadHomePage();
         setupNavigationButtons();
         setupUrlBar();
@@ -116,9 +121,14 @@ public class MainActivity extends AppCompatActivity {
 
     private void setupUrlBar() {
         urlBar.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_GO) {
+            if (actionId == EditorInfo.IME_ACTION_GO) {
                 String input = urlBar.getText().toString().trim();
                 loadUrlOrSearch(input);
+                
+                // ২. সার্চ দেওয়ার পর কিবোর্ড অটোমেটিক বন্ধ করা
+                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                imm.hideSoftInputFromWindow(urlBar.getWindowToken(), 0);
+                
                 return true;
             }
             return false;
