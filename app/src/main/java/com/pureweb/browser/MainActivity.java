@@ -51,8 +51,8 @@ public class MainActivity extends AppCompatActivity {
             // ১. সেটিংস বিল্ডার তৈরি করা
             GeckoRuntimeSettings.Builder settingsBuilder = new GeckoRuntimeSettings.Builder();
             
-            // ২. অটো-প্লে অন করা (ভিডিও প্রিভিউ এর জন্য দরকার)
-            settingsBuilder.autoplayDefault(GeckoRuntimeSettings.AUTOPLAY_DEFAULT_ALLOWED);
+            // ২. অটো-প্লে অন করা (সরাসরি 0 ব্যবহার করা হলো)
+            settingsBuilder.autoplayDefault(0);
             
             // ৩. রানটাইম তৈরি করা
             runtime = GeckoRuntime.create(this, settingsBuilder.build());
