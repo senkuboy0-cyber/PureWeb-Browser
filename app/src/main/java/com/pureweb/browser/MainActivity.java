@@ -176,20 +176,28 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(this, "Bookmark feature coming soon", Toast.LENGTH_SHORT).show();
                     return true;
                 } else if (id == R.id.menu_devtools) {
-                    // এই স্ক্রিপ্টটি Eruda নামের একটি মোবাইল DevTools লোড করে
-                    String jsCode = "javascript: (" +
+                    // এই স্ক্রিপ্টটি Eruda লোড করবে এবং ফ্লোটিং আইকনটি লুকিয়ে দেবে
+                    String erudaScript = "javascript: (" +
                         "function() { " +
-                        "   if (typeof eruda !== 'undefined') { eruda.show(); return; } " +
+                        "   if (window.eruda) { " +
+                        "       eruda.show(); " +
+                        "       return; " +
+                        "   } " +
                         "   var script = document.createElement('script'); " +
                         "   script.src = 'https://cdn.jsdelivr.net/npm/eruda'; " +
                         "   document.body.appendChild(script); " +
-                        "   script.onload = function() { eruda.init(); eruda.show(); } " +
+                        "   script.onload = function() { " +
+                        "       eruda.init(); " +
+                        "       eruda.show(); " +
+                        "       // ফ্লোটিং গিয়ার আইকনটি সবসময় লুকিয়ে রাখার জন্য CSS ইনজেকশন
+                        "       var style = document.createElement('style'); " +
+                        "       style.innerHTML = '.eruda-entry-btn { display: none !important; }'; " +
+                        "       document.head.appendChild(style); " +
+                        "   }; " +
                         "}" +
                         ")()";
 
-                    // JavaScript রান করার জন্য loadUri ব্যবহার করতে হয় GeckoView তে
-                    session.loadUri(jsCode);
-                    Toast.makeText(this, "DevTools Loading...", Toast.LENGTH_SHORT).show();
+                    session.loadUri(erudaScript);
                     return true;
                 }
                 return false;
