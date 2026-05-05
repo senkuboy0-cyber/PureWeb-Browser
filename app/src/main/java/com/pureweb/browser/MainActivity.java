@@ -14,8 +14,6 @@ import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 import org.mozilla.geckoview.GeckoRuntime;
 import org.mozilla.geckoview.GeckoSession;
 import org.mozilla.geckoview.GeckoView;
@@ -108,18 +106,17 @@ public class MainActivity extends AppCompatActivity {
 
         View bottomNav = findViewById(R.id.bottomNav);
 
-        ViewCompat.setOnApplyWindowInsetsListener(
-            findViewById(R.id.root_layout), (v, insets) -> {
-                boolean imeVisible = insets.isVisible(
-                    WindowInsetsCompat.Type.ime()
-                );
-                // keyboard খুললে bottom nav লুকাও, বন্ধ হলে দেখাও
+        findViewById(R.id.root_layout).getViewTreeObserver()
+            .addOnGlobalLayoutListener(() -> {
+                android.graphics.Rect r = new android.graphics.Rect();
+                getWindow().getDecorView().getWindowVisibleDisplayFrame(r);
+                int screenHeight = getWindow().getDecorView().getHeight();
+                int keyboardHeight = screenHeight - r.bottom;
                 bottomNav.setVisibility(
-                    imeVisible ? View.GONE : View.VISIBLE
+                    keyboardHeight > screenHeight * 0.15
+                    ? View.GONE : View.VISIBLE
                 );
-                return insets;
-            }
-        );
+            });
     }
 
     private void setupNavigationButtons() {
