@@ -97,11 +97,10 @@ public class SettingsActivity extends AppCompatActivity {
                         .setTitle("Install uBlock Origin?")
                         .setMessage("This extension needs permissions to block ads and trackers.")
                         .setPositiveButton("Allow", (dialog, which) -> {
-                            // কনস্ট্রাক্টর ব্যবহার করে true পাঠানো হচ্ছে (Allow)
+                            // সার্চ রেজাল্ট অনুযায়ী কনস্ট্রাক্টর ব্যবহার করা হলো
                             result.complete(new WebExtension.PermissionPromptResponse(true));
                         })
                         .setNegativeButton("Cancel", (dialog, which) -> {
-                            // কনস্ট্রাক্টর ব্যবহার করে false পাঠানো হচ্ছে (Deny)
                             result.complete(new WebExtension.PermissionPromptResponse(false));
                         })
                         .setOnCancelListener(dialog -> result.complete(new WebExtension.PermissionPromptResponse(false)))
