@@ -1,5 +1,4 @@
 package com.pureweb.browser;
-
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -20,9 +19,7 @@ import org.mozilla.geckoview.GeckoRuntime;
 import org.mozilla.geckoview.GeckoSession;
 import org.mozilla.geckoview.GeckoView;
 import org.mozilla.geckoview.WebExtension;
-
 public class MainActivity extends AppCompatActivity {
-
     private GeckoView geckoView;
     private GeckoSession session;
     public static GeckoRuntime runtime;
@@ -31,14 +28,11 @@ public class MainActivity extends AppCompatActivity {
     private SharedPreferences prefs;
     private ImageButton btnBack, btnForward, btnHome, btnRefresh, menuBtn;
     private boolean canGoBack = false;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         prefs = getSharedPreferences("PureWebPrefs", MODE_PRIVATE);
-
         geckoView = findViewById(R.id.geckoView);
         urlBar = findViewById(R.id.urlBar);
         progressBar = findViewById(R.id.progressBar);
@@ -47,22 +41,18 @@ public class MainActivity extends AppCompatActivity {
         btnHome = findViewById(R.id.btnHome);
         btnRefresh = findViewById(R.id.btnRefresh);
         menuBtn = findViewById(R.id.menuBtn);
-
         if (runtime == null) {
             runtime = GeckoRuntime.create(this);
         }
-
         session = new GeckoSession();
         session.open(runtime);
         geckoView.setSession(session);
-
         session.setNavigationDelegate(new GeckoSession.NavigationDelegate() {
             @Override
             public void onCanGoBack(GeckoSession session, boolean canGoBack) {
                 MainActivity.this.canGoBack = canGoBack;
             }
         });
-
         session.setProgressDelegate(new GeckoSession.ProgressDelegate() {
             @Override
             public void onPageStart(GeckoSession session, String url) {
@@ -77,7 +67,6 @@ public class MainActivity extends AppCompatActivity {
                 runOnUiThread(() -> progressBar.setVisibility(View.GONE));
             }
         });
-
         // ফুলস্ক্রিন লজিক
         session.setContentDelegate(new GeckoSession.ContentDelegate() {
             @Override
@@ -101,12 +90,10 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-
         loadHomePage();
         setupNavigationButtons();
         setupUrlBar();
         setupMenuButton();
-
         // কিবোর্ড হ্যান্ডলিং
         findViewById(R.id.root_layout).getViewTreeObserver().addOnGlobalLayoutListener(() -> {
             if (geckoView == null) return;
@@ -121,14 +108,12 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-
     private void setupNavigationButtons() {
         btnBack.setOnClickListener(v -> session.goBack());
         btnForward.setOnClickListener(v -> session.goForward());
         btnHome.setOnClickListener(v -> loadHomePage());
         btnRefresh.setOnClickListener(v -> session.reload());
     }
-
     private void setupUrlBar() {
         urlBar.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_GO) {
@@ -141,7 +126,6 @@ public class MainActivity extends AppCompatActivity {
             return false;
         });
     }
-
     private void setupMenuButton() {
         menuBtn.setOnClickListener(v -> {
             PopupMenu popup = new PopupMenu(MainActivity.this, v);
@@ -175,10 +159,8 @@ public class MainActivity extends AppCompatActivity {
             popup.show();
         });
     }
-
     private void showActiveExtensions() {
         if (runtime == null) return;
-
         runtime.getWebExtensionController().list().accept(extensions -> {
             if (extensions.isEmpty()) {
                 runOnUiThread(() -> Toast.makeText(this, "No extensions installed", Toast.LENGTH_SHORT).show());
@@ -204,19 +186,22 @@ public class MainActivity extends AppCompatActivity {
             });
         });
     }
-
     private void openExtensionPopup(WebExtension extension) {
-        if (extension.metaData.basePath != null) {
-            String optionUrl = extension.metaData.optionsUrl;
-            if (optionUrl != null && !optionUrl.isEmpty()) {
-                session.loadUri(optionUrl);
-                Toast.makeText(this, "Opening " + extension.metaData.name + " settings", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this, "This extension has no settings page", Toast.LENGTH_SHORT).show();
-            }
+        // আমরা চেক করব homepageUrl আছে কি না
+        String homeUrl = null;
+        
+        // যেহেতু metaData তে সরাসরি homepageUrl থাকতে পারে বা নাও পারে, আমরা safe থাকব
+        if (extension.metaData != null) {
+            // নাম এবং বর্ণনা দেখানো
+            new AlertDialog.Builder(this)
+                .setTitle(extension.metaData.name)
+                .setMessage("Version: " + extension.metaData.version + "\n\n" + extension.metaData.description)
+                .setPositiveButton("OK", null)
+                .show();
+        } else {
+            Toast.makeText(this, "Extension details not available", Toast.LENGTH_SHORT).show();
         }
     }
-
     private void loadUrlOrSearch(String input) {
         if (input.isEmpty()) return;
         String url;
@@ -236,11 +221,9 @@ public class MainActivity extends AppCompatActivity {
         }
         session.loadUri(url);
     }
-
     private void loadHomePage() {
         session.loadUri("https://www.google.com");
     }
-
     @Override
     public void onBackPressed() {
         if (canGoBack) {
