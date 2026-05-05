@@ -173,10 +173,11 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(this, "Bookmark feature coming soon", Toast.LENGTH_SHORT).show();
                     return true;
                 } else if (id == R.id.menu_devtools) {
-                    // এই স্ক্রিপ্টটি Eruda লোড করবে, ওপেন করবে এবং ফ্লোটিং আইকনটি লুকিয়ে দেবে
-                    String erudaScript = "javascript:(function(){if(window.eruda){eruda.show();return;}var script=document.createElement('script');script.src='https://cdn.jsdelivr.net/npm/eruda';document.body.appendChild(script);script.onload=function(){eruda.init();eruda.show();var style=document.createElement('style');style.innerHTML='.eruda-entry-btn{display:none!important}';document.head.appendChild(style);};})();";
+                    // এই স্ক্রিপ্টটি Eruda লোড করবে এবং গিয়ার আইকন দেখাবে
+                    String erudaScript = "javascript:(function(){if(window.eruda){eruda.show();return;}var script=document.createElement('script');script.src='https://cdn.jsdelivr.net/npm/eruda';document.body.appendChild(script);script.onload=function(){eruda.init();};})();";
+                    
                     session.loadUri(erudaScript);
-                    Toast.makeText(this, "DevTools Opening...", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "DevTools Icon Added", Toast.LENGTH_SHORT).show();
                     return true;
                 }
                 return false;
