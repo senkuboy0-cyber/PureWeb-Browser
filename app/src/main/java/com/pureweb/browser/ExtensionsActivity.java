@@ -1,5 +1,4 @@
 package com.pureweb.browser;
-
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -15,19 +14,18 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.bumptech.glide.Glide;
-
 import org.mozilla.geckoview.GeckoResult;
 import org.mozilla.geckoview.GeckoRuntime;
 import org.mozilla.geckoview.WebExtension;
 import org.mozilla.geckoview.WebExtensionController;
-
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-
 public class ExtensionsActivity extends AppCompatActivity {
-
     private RecyclerView recyclerView;
     private ExtensionsAdapter adapter;
     private List<ExtensionItem> recommendedList = new ArrayList<>();
@@ -54,22 +52,68 @@ public class ExtensionsActivity extends AppCompatActivity {
     }
 
     private void loadRecommendedExtensions() {
-        // ১৫টি এক্সটেনশন এখানে যোগ করা হলো (ID এবং আইকন সহ)
-        recommendedList.add(new ExtensionItem("uBlock Origin", "uBlock0@raymondhill.net", "An efficient blocker.", 4.9, "https://addons.mozilla.org/user-media/addon_icons/0/607-64.png"));
-        recommendedList.add(new ExtensionItem("Dark Reader", "addon@darkreader.org", "Dark mode for every website.", 4.8, "https://addons.mozilla.org/user-media/addon_icons/0/925-64.png"));
-        recommendedList.add(new ExtensionItem("Bitwarden", "{446900e4-71c2-419f-a6a7-df9c091e268b}", "Free Password Manager.", 4.7, "https://addons.mozilla.org/user-media/addon_icons/0/742-64.png"));
-        recommendedList.add(new ExtensionItem("Privacy Badger", "jid1-MnnxcxisBPnSXQ@jetpack", "Blocks invisible trackers.", 4.5, "https://addons.mozilla.org/user-media/addon_icons/0/506183-64.png"));
-        recommendedList.add(new ExtensionItem("SponsorBlock", "sponsorBlocker@ajay.app", "Skip YouTube Sponsors.", 4.6, "https://addons.mozilla.org/user-media/addon_icons/0/958334-64.png"));
-        recommendedList.add(new ExtensionItem("NoScript", "{73a6fe31-595d-460b-a920-fcc0f8843232}", "Allow/Block Scripts.", 4.3, "https://addons.mozilla.org/user-media/addon_icons/0/722-64.png"));
-        recommendedList.add(new ExtensionItem("Tampermonkey", "firefox@tampermonkey.net", "User Script Manager.", 4.6, "https://addons.mozilla.org/user-media/addon_icons/0/768-64.png"));
-        recommendedList.add(new ExtensionItem("LastPass", "support@lastpass.com", "Password Manager.", 4.2, "https://addons.mozilla.org/user-media/addon_icons/0/726-64.png"));
-        recommendedList.add(new ExtensionItem("AdGuard AdBlocker", "adguardadblocker@adguard.com", "Ads & Pop-ups Blocker.", 4.5, "https://addons.mozilla.org/user-media/addon_icons/0/468082-64.png"));
-        recommendedList.add(new ExtensionItem("Adblock Plus", "{d10d0bf8-f5b5-c8b4-a8b2-2b9879e08c5d}", "Popular Ad Blocker.", 4.4, "https://addons.mozilla.org/user-media/addon_icons/0/1865-64.png"));
-        recommendedList.add(new ExtensionItem("ClearURLs", "{74145f27-f039-47ce-a470-a662b129930a}", "Remove tracking from URLs.", 4.6, "https://addons.mozilla.org/user-media/addon_icons/0/850591-64.png"));
-        recommendedList.add(new ExtensionItem("Decentraleyes", "jid1-BoFifL9Vbdl2zQ@jetpack", "Local CDN Emulation.", 4.5, "https://addons.mozilla.org/user-media/addon_icons/0/666294-64.png"));
-        recommendedList.add(new ExtensionItem("User-Agent Switcher", "user-agent-switcher@ninetailed.ninja", "Change User Agent.", 4.2, "https://addons.mozilla.org/user-media/addon_icons/0/722284-64.png"));
-        recommendedList.add(new ExtensionItem("Stylus", "{7a7a4a92-a2a0-41d1-9fd7-1e92480d612d}", "Custom Website Themes.", 4.6, "https://addons.mozilla.org/user-media/addon_icons/0/818644-64.png"));
-        recommendedList.add(new ExtensionItem("I don't care about cookies", "jid1-KKzOGWgsW3Ao4Q@jetpack", "Hide Cookie Warnings.", 4.7, "https://addons.mozilla.org/user-media/addon_icons/0/453450-64.png"));
+        // API থেকে ডাটা লোড করার জন্য নতুন Thread ব্যবহার করতে হবে
+        new Thread(() -> {
+            try {
+                // Mozilla AMO API (Android এর জন্য জনপ্রিয় ১৫টি এক্সটেনশন)
+                URL url = new URL("https://addons.mozilla.org/api/v5/addons/search/?app=android&sort=users&type=extension&page_size=15");
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("GET");
+                connection.connect();
+
+                // JSON Response রিড করা
+                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                StringBuilder result = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    result.append(line);
+                }
+                reader.close();
+
+                // JSON Parse করা
+                org.json.JSONObject response = new org.json.JSONObject(result.toString());
+                org.json.JSONArray results = response.getJSONArray("results");
+
+                // আগের লিস্ট ক্লিয়ার করা
+                recommendedList.clear();
+
+                // লুপ করে প্রতিটি এক্সটেনশনের ডাটা বের করা
+                for (int i = 0; i < results.length(); i++) {
+                    org.json.JSONObject obj = results.getJSONObject(i);
+                    
+                    // এক্সটেনশনের GUID (ID)
+                    String id = obj.getString("guid"); 
+                    
+                    // নাম (Localized)
+                    String name = obj.getJSONObject("name").optString("en-US", "Unknown");
+                    
+                    // ডিসক্রিপশন
+                    String summary = "";
+                    if (obj.has("summary")) {
+                        summary = obj.getJSONObject("summary").optString("en-US", "");
+                    }
+                    
+                    // ছবির URL
+                    String iconUrl = obj.optString("icon_url");
+                    
+                    // রেটিং
+                    double rating = 0.0;
+                    if (obj.has("ratings")) {
+                        rating = obj.getJSONObject("ratings").optDouble("average", 0.0);
+                    }
+
+                    // লিস্টে যোগ করা
+                    recommendedList.add(new ExtensionItem(name, id, summary, rating, iconUrl));
+                }
+
+                // UI আপডেট করা (Main Thread এ)
+                runOnUiThread(() -> adapter.notifyDataSetChanged());
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                runOnUiThread(() -> Toast.makeText(this, "Failed to load extensions", Toast.LENGTH_SHORT).show());
+            }
+        }).start();
     }
 
     private void checkInstalledExtensions() {
