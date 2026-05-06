@@ -159,7 +159,7 @@ public class MainActivity extends AppCompatActivity {
                     showActiveExtensions();
                     return true;
                 } else if (id == R.id.menu_videos) {
-                    Toast.makeText(this, "Videos feature coming soon", Toast.LENGTH_SHORT).show();
+                    showVideoBottomSheet();
                     return true;
                 } else if (id == R.id.menu_devtools) {
                     Toast.makeText(this, "DevTools feature coming soon", Toast.LENGTH_SHORT).show();
@@ -197,12 +197,13 @@ public class MainActivity extends AppCompatActivity {
         if (extension.metaData != null && 
             extension.metaData.optionsPageUrl != null) {
             session.loadUri(extension.metaData.optionsPageUrl);
-            Toast.makeText(this, "Opening settings...", 
-                Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Opening settings...", Toast.LENGTH_SHORT).show();
         } else {
-            Toast.makeText(this, "No settings page", 
-                Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "No settings page", Toast.LENGTH_SHORT).show();
         }
+    }
+    private void showVideoBottomSheet() {
+        Toast.makeText(this, "Videos feature coming soon", Toast.LENGTH_SHORT).show();
     }
     private void loadUrlOrSearch(String input) {
         if (input.isEmpty()) return;
