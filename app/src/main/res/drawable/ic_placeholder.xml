@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="oval">
-    
-    <!-- ধূসর রঙ -->
-    <solid android:color="#888888"/>
-    <!-- সাইজ ৪৮x৪৮ dp -->
-    <size android:width="48dp" android:height="48dp"/>
-    
-</shape>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path
+        android:fillColor="#E0E0E0"
+        android:pathData="M24,24m-20,0a20,20 0,1 1,40 0a20,20 0,1 1,-40 0"/>
+    <path
+        android:fillColor="#9E9E9E"
+        android:pathData="M24,14 L30,24 L24,34 L18,24 Z"/>
+</vector>

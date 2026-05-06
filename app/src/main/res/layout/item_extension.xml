@@ -1,59 +1,70 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:padding="12dp"
-    android:gravity="center_vertical"
-    android:background="#FFFFFF">
-
-    <ImageView
-        android:id="@+id/extension_icon"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:scaleType="centerCrop"/>
+    android:layout_margin="4dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="2dp">
 
     <LinearLayout
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical"
-        android:layout_marginStart="12dp">
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:gravity="center_vertical">
 
-        <TextView
-            android:id="@+id/extension_name"
+        <ImageView
+            android:id="@+id/extension_icon"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/ic_placeholder"/>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="12dp">
+
+            <TextView
+                android:id="@+id/extension_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Extension Name"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#000000"/>
+
+            <TextView
+                android:id="@+id/extension_desc"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Description"
+                android:textSize="12sp"
+                android:textColor="#666666"
+                android:maxLines="2"
+                android:ellipsize="end"/>
+
+            <TextView
+                android:id="@+id/extension_rating"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Rating"
+                android:textSize="12sp"
+                android:textColor="#FF9800"/>
+
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/extension_btn_action"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="#000000"/>
-
-        <TextView
-            android:id="@+id/extension_desc"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="12sp"
-            android:textColor="#666666"
-            android:maxLines="2"
-            android:ellipsize="end"/>
-
-        <TextView
-            android:id="@+id/extension_rating"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="12sp"
-            android:textColor="#FF9800"
-            android:layout_marginTop="4dp"/>
+            android:text="Add"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#4CAF50"
+            android:textAllCaps="false"/>
 
     </LinearLayout>
 
-    <Button
-        android:id="@+id/extension_btn_action"
-        android:layout_width="wrap_content"
-        android:layout_height="36dp"
-        android:text="Add"
-        android:textColor="#FFFFFF"
-        android:backgroundTint="#4CAF50"
-        android:textAllCaps="false"/>
-
-</LinearLayout>
+</androidx.cardview.widget.CardView>

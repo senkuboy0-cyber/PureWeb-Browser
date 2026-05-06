@@ -50,12 +50,12 @@
         android:background="#E0E0E0"
         android:layout_marginVertical="20dp"/>
 
-    <!-- Open Extension Store Button -->
+    <!-- Extension Store Button -->
     <Button
         android:id="@+id/btnOpenExtensions"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Open Extension Store"
+        android:text="Extension Store"
         android:backgroundTint="#2196F3"
         android:textAllCaps="false"/>
 
@@ -69,7 +69,7 @@
         android:backgroundTint="#4CAF50"
         android:textAllCaps="false"/>
 
-    <!-- কাস্টম এক্সটেনশন বাটন -->
+    <!-- Custom Extension Button -->
     <Button
         android:id="@+id/btnCustomExtension"
         android:layout_width="match_parent"
@@ -79,6 +79,7 @@
         android:backgroundTint="#9C27B0"
         android:textAllCaps="false"/>
 
+    <!-- Clear Cache Button -->
     <Button
         android:id="@+id/btnClearCache"
         android:layout_width="match_parent"
