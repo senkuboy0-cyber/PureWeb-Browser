@@ -23,6 +23,12 @@
             android:parentActivityName=".SettingsActivity" />
             
         <activity
+            android:name=".ExtensionDetailActivity"
+            android:exported="false"
+            android:label="Extension Details"
+            android:parentActivityName=".ExtensionsActivity" />
+            
+        <activity
             android:name=".MainActivity"
             android:exported="true"
             android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden"
