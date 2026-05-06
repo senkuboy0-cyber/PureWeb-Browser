@@ -1,4 +1,5 @@
 package com.pureweb.browser;
+
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -18,20 +19,26 @@ import org.mozilla.geckoview.GeckoRuntime;
 import org.mozilla.geckoview.GeckoSession;
 import org.mozilla.geckoview.GeckoView;
 import org.mozilla.geckoview.WebExtension;
+
 public class MainActivity extends AppCompatActivity {
+
     private GeckoView geckoView;
     private GeckoSession session;
     public static GeckoRuntime runtime;
+    
     private EditText urlBar;
     private ProgressBar progressBar;
     private SharedPreferences prefs;
     private ImageButton btnBack, btnForward, btnHome, btnRefresh, menuBtn;
     private boolean canGoBack = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         prefs = getSharedPreferences("PureWebPrefs", MODE_PRIVATE);
+
         geckoView = findViewById(R.id.geckoView);
         urlBar = findViewById(R.id.urlBar);
         progressBar = findViewById(R.id.progressBar);
@@ -40,18 +47,54 @@ public class MainActivity extends AppCompatActivity {
         btnHome = findViewById(R.id.btnHome);
         btnRefresh = findViewById(R.id.btnRefresh);
         menuBtn = findViewById(R.id.menuBtn);
+
+        // Runtime তৈরি
         if (runtime == null) {
             runtime = GeckoRuntime.create(this);
         }
-        session = new GeckoSession();
-        session.open(runtime);
+
+        // Session তৈরি বা পুরনোটা ব্যবহার
+        if (session == null) {
+            session = new GeckoSession();
+            setupDelegates();
+        }
+
+        // Session ওপেন করা
+        if (!session.isOpen()) {
+            session.open(runtime);
+        }
+
+        // গুরুত্বপূর্ণ: View তে Session সেট করা
         geckoView.setSession(session);
+        
+        loadHomePage();
+        setupNavigationButtons();
+        setupUrlBar();
+        setupMenuButton();
+
+        // কিবোর্ড হ্যান্ডলিং
+        findViewById(R.id.root_layout).getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            if (geckoView == null) return;
+            android.graphics.Rect r = new android.graphics.Rect();
+            getWindow().getDecorView().getWindowVisibleDisplayFrame(r);
+            int screenHeight = getWindow().getDecorView().getRootView().getHeight();
+            int keypadHeight = screenHeight - r.bottom;
+            if (keypadHeight > screenHeight * 0.15) {
+                geckoView.setVerticalClipping(keypadHeight);
+            } else {
+                geckoView.setVerticalClipping(0);
+            }
+        });
+    }
+
+    private void setupDelegates() {
         session.setNavigationDelegate(new GeckoSession.NavigationDelegate() {
             @Override
             public void onCanGoBack(GeckoSession session, boolean canGoBack) {
                 MainActivity.this.canGoBack = canGoBack;
             }
         });
+
         session.setProgressDelegate(new GeckoSession.ProgressDelegate() {
             @Override
             public void onPageStart(GeckoSession session, String url) {
@@ -60,12 +103,13 @@ public class MainActivity extends AppCompatActivity {
                     urlBar.setText(url);
                 });
             }
+
             @Override
             public void onPageStop(GeckoSession session, boolean success) {
                 runOnUiThread(() -> progressBar.setVisibility(View.GONE));
             }
         });
-        // ফুলস্ক্রিন লজিক
+
         session.setContentDelegate(new GeckoSession.ContentDelegate() {
             @Override
             public void onFullScreen(GeckoSession session, boolean fullScreen) {
@@ -88,30 +132,48 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-        loadHomePage();
-        setupNavigationButtons();
-        setupUrlBar();
-        setupMenuButton();
-        // কিবোর্ড হ্যান্ডলিং
-        findViewById(R.id.root_layout).getViewTreeObserver().addOnGlobalLayoutListener(() -> {
-            if (geckoView == null) return;
-            android.graphics.Rect r = new android.graphics.Rect();
-            getWindow().getDecorView().getWindowVisibleDisplayFrame(r);
-            int screenHeight = getWindow().getDecorView().getRootView().getHeight();
-            int keypadHeight = screenHeight - r.bottom;
-            if (keypadHeight > screenHeight * 0.15) {
-                geckoView.setVerticalClipping(keypadHeight);
-            } else {
-                geckoView.setVerticalClipping(0);
-            }
-        });
     }
+
+    // গুরুত্বপূর্ণ ফিক্স: onResume
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (session != null) {
+            if (geckoView.getSession() != session) {
+                geckoView.setSession(session);
+            }
+            session.setActive(true);
+        }
+    }
+
+    // গুরুত্বপূর্ণ ফিক্স: onPause
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (session != null) {
+            session.setActive(false);
+        }
+    }
+
+    // গুরুত্বপূর্ণ ফিক্স: onDestroy
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (isFinishing()) {
+            if (session != null) {
+                session.close();
+                session = null;
+            }
+        }
+    }
+
     private void setupNavigationButtons() {
         btnBack.setOnClickListener(v -> session.goBack());
         btnForward.setOnClickListener(v -> session.goForward());
         btnHome.setOnClickListener(v -> loadHomePage());
         btnRefresh.setOnClickListener(v -> session.reload());
     }
+
     private void setupUrlBar() {
         urlBar.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_GO) {
@@ -124,6 +186,7 @@ public class MainActivity extends AppCompatActivity {
             return false;
         });
     }
+
     private void setupMenuButton() {
         menuBtn.setOnClickListener(v -> {
             PopupMenu popup = new PopupMenu(MainActivity.this, v);
@@ -148,16 +211,8 @@ public class MainActivity extends AppCompatActivity {
                 } else if (id == R.id.menu_bookmark) {
                     Toast.makeText(this, "Bookmark feature coming soon", Toast.LENGTH_SHORT).show();
                     return true;
-                }
-                // --- নতুন যোগ করা অংশ ---
-                else if (id == R.id.menu_active_extensions) {
+                } else if (id == R.id.menu_active_extensions) {
                     showActiveExtensions();
-                    return true;
-                } else if (id == R.id.menu_devtools) {
-                    // DevTools কোড ঠিক আছে, এটি লুকাইনি
-                    String erudaScript = "javascript:(function(){if(window.eruda){eruda.show();return;}var script=document.createElement('script');script.src='https://cdn.jsdelivr.net/npm/eruda';document.body.appendChild(script);script.onload=function(){eruda.init();};})();";
-                    session.loadUri(erudaScript);
-                    Toast.makeText(this, "DevTools Icon Added", Toast.LENGTH_SHORT).show();
                     return true;
                 }
                 return false;
@@ -165,6 +220,7 @@ public class MainActivity extends AppCompatActivity {
             popup.show();
         });
     }
+
     private void showActiveExtensions() {
         if (runtime == null) return;
         runtime.getWebExtensionController().list().accept(extensions -> {
@@ -188,16 +244,19 @@ public class MainActivity extends AppCompatActivity {
             });
         });
     }
+
     private void openExtensionPopup(WebExtension extension) {
-        // GeckoView 152 তে basePath এবং optionsUrl এর বদলে optionsPageUrl ব্যবহার করতে হয়
-        if (extension.metaData != null && extension.metaData.optionsPageUrl != null) {
-            // এক্সটেনশনের সেটিংস পেজ ব্রাউজারে লোড করা হলো
-            session.loadUri(extension.metaData.optionsPageUrl);
-            Toast.makeText(this, "Opening " + extension.metaData.name + " settings", Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(this, "This extension has no settings page", Toast.LENGTH_SHORT).show();
+        if (extension.metaData.basePath != null) {
+            String optionUrl = extension.metaData.optionsUrl;
+            if (optionUrl != null && !optionUrl.isEmpty()) {
+                session.loadUri(optionUrl);
+                Toast.makeText(this, "Opening " + extension.metaData.name + " settings", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "This extension has no settings page", Toast.LENGTH_SHORT).show();
+            }
         }
     }
+
     private void loadUrlOrSearch(String input) {
         if (input.isEmpty()) return;
         String url;
@@ -217,9 +276,11 @@ public class MainActivity extends AppCompatActivity {
         }
         session.loadUri(url);
     }
+
     private void loadHomePage() {
         session.loadUri("https://www.google.com");
     }
+
     @Override
     public void onBackPressed() {
         if (canGoBack) {
