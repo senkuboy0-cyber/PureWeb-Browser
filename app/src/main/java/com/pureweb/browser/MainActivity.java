@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -61,7 +60,6 @@ public class MainActivity extends AppCompatActivity {
                     urlBar.setText(url);
                 });
             }
-
             @Override
             public void onPageStop(GeckoSession session, boolean success) {
                 runOnUiThread(() -> progressBar.setVisibility(View.GONE));
@@ -150,8 +148,16 @@ public class MainActivity extends AppCompatActivity {
                 } else if (id == R.id.menu_bookmark) {
                     Toast.makeText(this, "Bookmark feature coming soon", Toast.LENGTH_SHORT).show();
                     return true;
-                } else if (id == R.id.menu_active_extensions) {
+                }
+                // --- নতুন যোগ করা অংশ ---
+                else if (id == R.id.menu_active_extensions) {
                     showActiveExtensions();
+                    return true;
+                } else if (id == R.id.menu_devtools) {
+                    // DevTools কোড ঠিক আছে, এটি লুকাইনি
+                    String erudaScript = "javascript:(function(){if(window.eruda){eruda.show();return;}var script=document.createElement('script');script.src='https://cdn.jsdelivr.net/npm/eruda';document.body.appendChild(script);script.onload=function(){eruda.init();};})();";
+                    session.loadUri(erudaScript);
+                    Toast.makeText(this, "DevTools Icon Added", Toast.LENGTH_SHORT).show();
                     return true;
                 }
                 return false;
@@ -166,41 +172,34 @@ public class MainActivity extends AppCompatActivity {
                 runOnUiThread(() -> Toast.makeText(this, "No extensions installed", Toast.LENGTH_SHORT).show());
                 return;
             }
-
             runOnUiThread(() -> {
                 AlertDialog.Builder builder = new AlertDialog.Builder(this);
                 builder.setTitle("Active Extensions");
-                
                 String[] names = new String[extensions.size()];
                 for (int i = 0; i < extensions.size(); i++) {
                     names[i] = extensions.get(i).metaData.name;
                 }
-
                 builder.setItems(names, (dialog, which) -> {
                     WebExtension selected = extensions.get(which);
                     openExtensionPopup(selected);
                 });
-                
                 builder.setNegativeButton("Close", null);
                 builder.show();
             });
         });
     }
     private void openExtensionPopup(WebExtension extension) {
-        // আমরা চেক করব homepageUrl আছে কি না
-        String homeUrl = null;
-        
-        // যেহেতু metaData তে সরাসরি homepageUrl থাকতে পারে বা নাও পারে, আমরা safe থাকব
-        if (extension.metaData != null) {
-            // নাম এবং বর্ণনা দেখানো
-            new AlertDialog.Builder(this)
-                .setTitle(extension.metaData.name)
-                .setMessage("Version: " + extension.metaData.version + "\n\n" + extension.metaData.description)
-                .setPositiveButton("OK", null)
-                .show();
-        } else {
-            Toast.makeText(this, "Extension details not available", Toast.LENGTH_SHORT).show();
-        }
+        // এক্সটেনশনের অপশন পেজ ওপেন করার সঠিক উপায়
+        runtime.getWebExtensionController().openOptionsPage(extension).accept(
+            success -> {
+                // সফল হলে কিছু করার দরকার নেই, পেজ লোড হবে
+                runOnUiThread(() -> Toast.makeText(this, "Opening " + extension.metaData.name + "...", Toast.LENGTH_SHORT).show());
+            },
+            error -> {
+                // যদি অপশন পেজ না থাকে
+                runOnUiThread(() -> Toast.makeText(this, "This extension has no settings page.", Toast.LENGTH_SHORT).show());
+            }
+        );
     }
     private void loadUrlOrSearch(String input) {
         if (input.isEmpty()) return;
