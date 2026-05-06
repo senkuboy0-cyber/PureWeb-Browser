@@ -10,14 +10,20 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.bumptech.glide.Glide; // Glide Import
+import com.bumptech.glide.Glide;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.mozilla.geckoview.GeckoResult;
+import org.mozilla.geckoview.GeckoRuntime;
+import org.mozilla.geckoview.WebExtension;
+import org.mozilla.geckoview.WebExtensionController;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -38,8 +44,6 @@ public class ExtensionsActivity extends AppCompatActivity {
 
         recyclerView = findViewById(R.id.recyclerViewExtensions);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        
-        // এখানে Adapter initialize করা হচ্ছে
         adapter = new ExtensionAdapter();
         recyclerView.setAdapter(adapter);
 
@@ -97,10 +101,63 @@ public class ExtensionsActivity extends AppCompatActivity {
         }).start();
     }
 
+    // --- Install Logic ---
+    private void startInstall(ExtensionItem item, Button btn) {
+        btn.setText("Installing...");
+        btn.setEnabled(false);
+
+        // ১. PromptDelegate সেট করা
+        if (MainActivity.runtime != null) {
+            MainActivity.runtime.getWebExtensionController().setPromptDelegate(new WebExtensionController.PromptDelegate() {
+                @NonNull
+                @Override
+                public GeckoResult<WebExtension.PermissionPromptResponse> onInstallPromptRequest(@NonNull WebExtension extension, @NonNull String[] permissions, @NonNull String[] origins, @NonNull String[] dataCollectionPermissions) {
+                    final GeckoResult<WebExtension.PermissionPromptResponse> result = new GeckoResult<>();                    
+                    // UI থ্রেডে ডায়ালগ দেখানো
+                    runOnUiThread(() -> {
+                        new AlertDialog.Builder(ExtensionsActivity.this)
+                                .setTitle("Add " + item.name + "?")
+                                .setMessage("This extension requires permissions to function.")
+                                .setPositiveButton("Allow", (dialog, which) -> result.complete(new WebExtension.PermissionPromptResponse(true, true, true)))
+                                .setNegativeButton("Cancel", (dialog, which) -> result.complete(new WebExtension.PermissionPromptResponse(false, false, false)))
+                                .setOnCancelListener(dialog -> result.complete(new WebExtension.PermissionPromptResponse(false, false, false)))
+                                .show();
+                    });
+                    return result;
+                }
+            });
+        }
+
+        // ২. ইনস্টলেশন শুরু
+        String url = "https://addons.mozilla.org/firefox/downloads/latest/" + item.id + "/latest.xpi";
+        if (MainActivity.runtime != null) {
+            MainActivity.runtime.getWebExtensionController().install(url).accept(
+                    extension -> runOnUiThread(() -> {
+                        Toast.makeText(this, item.name + " Installed!", Toast.LENGTH_SHORT).show();
+                        btn.setText("Installed");
+                        checkInstalledExtensions(); // লিস্ট রিফ্রেশ করা
+                    }),
+                    exception -> runOnUiThread(() -> {
+                        Toast.makeText(this, "Failed: " + exception.getMessage(), Toast.LENGTH_SHORT).show();
+                        btn.setText("Add");
+                        btn.setEnabled(true);
+                    })
+            );
+        }
+    }
+
+    private void checkInstalledExtensions() {
+        if (MainActivity.runtime == null) return;
+        MainActivity.runtime.getWebExtensionController().list().accept(extensions -> {
+            runOnUiThread(() -> adapter.notifyDataSetChanged());
+        });
+    }
+
     // --- Model Class ---
     class ExtensionItem {
         String name, id, desc, iconUrl;
         double rating;
+        boolean isInstalled = false;
 
         ExtensionItem(String name, String id, String desc, double rating, String iconUrl) {
             this.name = name;
@@ -129,20 +186,41 @@ public class ExtensionsActivity extends AppCompatActivity {
             holder.desc.setText(item.desc);
             holder.rating.setText(String.valueOf(item.rating));
 
-            // ছবি লোডের জন্য Glide
             Glide.with(ExtensionsActivity.this)
                     .load(item.iconUrl)
-                    .placeholder(R.drawable.ic_placeholder) // আগে যে ফাইল বানালাম
-                    .error(R.drawable.ic_placeholder)       // এরর হলেও সেটাই দেখাবে
+                    .placeholder(R.drawable.ic_placeholder)
+                    .error(R.drawable.ic_placeholder)
                     .into(holder.icon);
 
-            holder.btnAction.setText("Add");
-            holder.btnAction.setBackgroundColor(Color.parseColor("#4CAF50"));
-            holder.btnAction.setEnabled(true);
+            // চেক করা ইনস্টল কি না
+            if (MainActivity.runtime != null) {
+                MainActivity.runtime.getWebExtensionController().list().accept(extensions -> {
+                    boolean found = false;
+                    for (WebExtension ext : extensions) {
+                        if (ext.id.equals(item.id)) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    boolean finalFound = found;
+                    runOnUiThread(() -> {
+                        if (finalFound) {
+                            holder.btnAction.setText("Installed");
+                            holder.btnAction.setEnabled(false);
+                            holder.btnAction.setBackgroundColor(Color.parseColor("#555555"));
+                        } else {
+                            holder.btnAction.setText("Add");
+                            holder.btnAction.setEnabled(true);
+                            holder.btnAction.setBackgroundColor(Color.parseColor("#4CAF50"));
+                        }
+                    });
+                });
+            }
 
             holder.btnAction.setOnClickListener(v -> {
-                // এখানে ইনস্টলের কোড থাকবে (আগের লজিক)
-                Toast.makeText(ExtensionsActivity.this, "Installing " + item.name, Toast.LENGTH_SHORT).show();
+                if (!holder.btnAction.getText().toString().equals("Installed")) {
+                    startInstall(item, holder.btnAction);
+                }
             });
         }
 
