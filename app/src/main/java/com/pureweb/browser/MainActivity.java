@@ -189,17 +189,14 @@ public class MainActivity extends AppCompatActivity {
         });
     }
     private void openExtensionPopup(WebExtension extension) {
-        // এক্সটেনশনের অপশন পেজ ওপেন করার সঠিক উপায়
-        runtime.getWebExtensionController().openOptionsPage(extension).accept(
-            success -> {
-                // সফল হলে কিছু করার দরকার নেই, পেজ লোড হবে
-                runOnUiThread(() -> Toast.makeText(this, "Opening " + extension.metaData.name + "...", Toast.LENGTH_SHORT).show());
-            },
-            error -> {
-                // যদি অপশন পেজ না থাকে
-                runOnUiThread(() -> Toast.makeText(this, "This extension has no settings page.", Toast.LENGTH_SHORT).show());
-            }
-        );
+        // GeckoView 152 তে basePath এবং optionsUrl এর বদলে optionsPageUrl ব্যবহার করতে হয়
+        if (extension.metaData != null && extension.metaData.optionsPageUrl != null) {
+            // এক্সটেনশনের সেটিংস পেজ ব্রাউজারে লোড করা হলো
+            session.loadUri(extension.metaData.optionsPageUrl);
+            Toast.makeText(this, "Opening " + extension.metaData.name + " settings", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, "This extension has no settings page", Toast.LENGTH_SHORT).show();
+        }
     }
     private void loadUrlOrSearch(String input) {
         if (input.isEmpty()) return;
