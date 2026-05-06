@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-
+    
     <item
         android:id="@+id/menu_bookmark"
         android:title="Bookmarks" />
@@ -17,15 +17,13 @@
         android:id="@+id/menu_share"
         android:title="Share Link" />
 
-    <!-- Active Extensions যোগ করুন -->
+    <item
+        android:id="@+id/menu_videos"
+        android:title="🎬 Videos" />
+
     <item
         android:id="@+id/menu_active_extensions"
         android:title="Active Extensions" />
-
-    <!-- DevTools যোগ করুন -->
-    <item
-        android:id="@+id/menu_devtools"
-        android:title="DevTools" />
 
     <item
         android:id="@+id/menu_settings"

@@ -69,6 +69,22 @@
         android:layout_below="@id/topBar"
         android:layout_above="@id/bottomNav"/>
 
+    <!-- Video Badge -->
+    <TextView
+        android:id="@+id/videoBadge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/bottomNav"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="8dp"
+        android:background="#CC1A1A2E"
+        android:text="🎬 0 videos"
+        android:textColor="#FFFFFF"
+        android:textSize="12sp"
+        android:padding="8dp"
+        android:visibility="gone"/>
+
     <!-- বটম নেভিগেশন -->
     <LinearLayout
         android:id="@+id/bottomNav"
