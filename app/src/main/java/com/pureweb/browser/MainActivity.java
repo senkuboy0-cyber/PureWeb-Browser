@@ -1,5 +1,4 @@
 package com.pureweb.browser;
-
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -17,11 +16,11 @@ import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import org.mozilla.geckoview.AllowOrDeny;
+import org.mozilla.geckoview.GeckoResult;
 import org.mozilla.geckoview.GeckoRuntime;
 import org.mozilla.geckoview.GeckoSession;
 import org.mozilla.geckoview.GeckoView;
 import org.mozilla.geckoview.WebExtension;
-
 public class MainActivity extends AppCompatActivity {
     private GeckoView geckoView;
     private GeckoSession session;
@@ -195,14 +194,14 @@ public class MainActivity extends AppCompatActivity {
         });
     }
     private void openExtensionPopup(WebExtension extension) {
-        if (extension.metaData.basePath != null) {
-            String optionUrl = extension.metaData.optionsUrl;
-            if (optionUrl != null && !optionUrl.isEmpty()) {
-                session.loadUri(optionUrl);
-                Toast.makeText(this, "Opening " + extension.metaData.name + " settings", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this, "This extension has no settings page", Toast.LENGTH_SHORT).show();
-            }
+        if (extension.metaData != null && 
+            extension.metaData.optionsPageUrl != null) {
+            session.loadUri(extension.metaData.optionsPageUrl);
+            Toast.makeText(this, "Opening settings...", 
+                Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, "No settings page", 
+                Toast.LENGTH_SHORT).show();
         }
     }
     private void loadUrlOrSearch(String input) {
