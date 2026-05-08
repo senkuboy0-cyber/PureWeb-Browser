@@ -1,12 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="pureweb_primary">#131315</color>
-    <color name="pureweb_primary_dark">#0A0A0C</color>
-    <color name="pureweb_accent">#00E5FF</color>
-    <color name="white">#FFFFFFFF</color>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
-    <color name="url_bar_bg">#2A2A2C</color>
-    <color name="light_gray">#3b494c</color>
-    <color name="glass_white">#1AFFFFFF</color>
-    <color name="glass_border">#33FFFFFF</color>
+    <color name="white">#FFFFFFFF</color>
+    
+    <!-- PureWeb Theme Colors -->
+    <color name="pureweb_primary">#4CAF50</color>
+    <color name="pureweb_primary_dark">#388E3C</color>
+
+    <!-- Missing Colors (এগুলো যোগ করা হলো) -->
+    <color name="url_bar_bg">#FFFFFF</color>
+    <color name="light_gray">#F5F5F5</color>
 </resources>
