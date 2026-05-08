@@ -3,7 +3,7 @@
     android:id="@+id/root_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFFFF">
+    android:background="#131315">
 
     <!-- টপ বার -->
     <LinearLayout
@@ -18,8 +18,8 @@
             style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="match_parent"
             android:layout_height="3dp"
-            android:progressTint="#4CAF50"
-            android:background="#E0E0E0"/>
+            android:progressTint="#00E5FF"
+            android:background="#353437"/>
 
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
@@ -33,7 +33,7 @@
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:padding="5dp"
-                android:background="#F5F5F5">
+                android:background="#201f21">
 
                 <ImageView
                     android:layout_width="24dp"
@@ -80,7 +80,7 @@
         android:layout_marginBottom="8dp"
         android:background="#CC1A1A2E"
         android:text="🎬 0 videos"
-        android:textColor="#FFFFFF"
+        android:textColor="#e5e1e4"
         android:textSize="12sp"
         android:padding="8dp"
         android:visibility="gone"/>
@@ -91,7 +91,7 @@
         android:layout_width="match_parent"
         android:layout_height="55dp"
         android:layout_alignParentBottom="true"
-        android:background="#FAFAFA"
+        android:background="#1c1b1d"
         android:orientation="horizontal"
         android:weightSum="4"
         android:elevation="4dp">
@@ -103,7 +103,7 @@
             android:layout_weight="1"
             android:background="?attr/selectableItemBackground"
             android:src="@android:drawable/ic_media_previous"
-            android:tint="#424242"/>
+            android:tint="#bac9cc"/>
 
         <ImageButton
             android:id="@+id/btnForward"
@@ -112,7 +112,7 @@
             android:layout_weight="1"
             android:background="?attr/selectableItemBackground"
             android:src="@android:drawable/ic_media_next"
-            android:tint="#424242"/>
+            android:tint="#bac9cc"/>
 
         <ImageButton
             android:id="@+id/btnHome"
@@ -121,7 +121,7 @@
             android:layout_weight="1"
             android:background="?attr/selectableItemBackground"
             android:src="@android:drawable/ic_menu_compass"
-            android:tint="#4CAF50"/>
+            android:tint="#00E5FF"/>
 
         <ImageButton
             android:id="@+id/btnRefresh"
@@ -130,7 +130,7 @@
             android:layout_weight="1"
             android:background="?attr/selectableItemBackground"
             android:src="@android:drawable/ic_menu_rotate"
-            android:tint="#424242"/>
+            android:tint="#bac9cc"/>
     </LinearLayout>
 
 </RelativeLayout>
