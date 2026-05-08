@@ -30,7 +30,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textSize="13sp"
-                android:textColor="#212121"
+                android:textColor="#e5e1e4"
                 android:maxLines="2"
                 android:ellipsize="end"/>
 
@@ -40,7 +40,7 @@
                 android:layout_height="wrap_content"
                 android:textSize="11sp"
                 android:textColor="#FFFFFF"
-                android:background="#4CAF50"
+                android:background="#00daf3"
                 android:paddingStart="6dp"
                 android:paddingEnd="6dp"
                 android:paddingTop="2dp"
@@ -64,7 +64,7 @@
             android:layout_weight="1"
             android:text="▶ Preview"
             android:layout_marginEnd="5dp"
-            android:backgroundTint="#1565C0"
+            android:backgroundTint="#00626e"
             android:textColor="#FFFFFF"
             android:textSize="12sp"
             android:textAllCaps="false"/>
@@ -76,7 +76,7 @@
             android:layout_weight="1"
             android:text="⬇ Download"
             android:layout_marginStart="5dp"
-            android:backgroundTint="#2E7D32"
+            android:backgroundTint="#00E5FF"
             android:textColor="#FFFFFF"
             android:textSize="12sp"
             android:textAllCaps="false"/>
@@ -87,7 +87,7 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="#EEEEEE"
+        android:background="#353437"
         android:layout_marginTop="12dp"/>
 
 </LinearLayout>

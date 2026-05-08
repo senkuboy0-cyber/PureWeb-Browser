@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:background="#FFFFFF">
+    android:background="#131315">
 
     <!-- Header -->
     <LinearLayout
@@ -13,7 +13,7 @@
         android:gravity="center_vertical"
         android:paddingStart="16dp"
         android:paddingEnd="16dp"
-        android:background="#F5F5F5">
+        android:background="#201f21">
 
         <TextView
             android:layout_width="0dp"
@@ -22,7 +22,7 @@
             android:text="🎬 Detected Videos"
             android:textSize="17sp"
             android:textStyle="bold"
-            android:textColor="#212121"/>
+            android:textColor="#e5e1e4"/>
 
     </LinearLayout>
 
@@ -30,7 +30,7 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="#E0E0E0"/>
+        android:background="#353437"/>
 
     <!-- Empty state -->
     <TextView
@@ -38,7 +38,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="এই page এ কোনো video পাওয়া যায়নি\nপেজটি লোড হতে দিন..."
-        android:textColor="#9E9E9E"
+        android:textColor="#bac9cc"
         android:textSize="14sp"
         android:gravity="center"
         android:padding="40dp"

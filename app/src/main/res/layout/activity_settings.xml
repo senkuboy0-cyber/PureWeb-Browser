@@ -4,7 +4,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp"
-    android:background="#FFFFFF">
+    android:background="#131315">
 
     <TextView
         android:layout_width="wrap_content"
@@ -12,7 +12,7 @@
         android:text="Select Search Engine"
         android:textSize="18sp"
         android:textStyle="bold"
-        android:textColor="#000000"/>
+        android:textColor="#00E5FF"/>
 
     <RadioGroup
         android:id="@+id/radioGroupEngine"
@@ -21,6 +21,7 @@
         android:layout_marginTop="15dp">
 
         <RadioButton
+            android:theme="@style/RadioButtonStyle"
             android:id="@+id/radioGoogle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -28,6 +29,7 @@
             android:textSize="16sp"/>
 
         <RadioButton
+            android:theme="@style/RadioButtonStyle"
             android:id="@+id/radioDuckDuckGo"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -36,6 +38,7 @@
             android:checked="true"/>
 
         <RadioButton
+            android:theme="@style/RadioButtonStyle"
             android:id="@+id/radioBing"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -47,7 +50,7 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="#E0E0E0"
+        android:background="#353437"
         android:layout_marginVertical="20dp"/>
 
     <!-- Extension Store Button -->
@@ -56,7 +59,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Extension Store"
-        android:backgroundTint="#2196F3"
+        android:backgroundTint="#00E5FF"
         android:textAllCaps="false"/>
 
     <!-- uBlock Origin Install Button -->
@@ -66,7 +69,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
         android:text="Install uBlock Origin"
-        android:backgroundTint="#4CAF50"
+        android:backgroundTint="#00E5FF"
         android:textAllCaps="false"/>
 
     <!-- Custom Extension Button -->
@@ -76,7 +79,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
         android:text="Developer: Install Custom Extension"
-        android:backgroundTint="#9C27B0"
+        android:backgroundTint="#00E5FF"
         android:textAllCaps="false"/>
 
     <!-- Clear Cache Button -->
@@ -86,6 +89,6 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
         android:text="Clear Browsing Data"
-        android:backgroundTint="#F44336"/>
+        android:backgroundTint="#ffb4ab"/>
 
 </LinearLayout>
