@@ -21,8 +21,8 @@ public class VideoInfo {
     private boolean isRegularDownload;
     private boolean isLive;
     private boolean isDetectedBySuperX;
-    private boolean isM3U8;
-    private boolean isMPD;
+    private boolean hasM3U8Content;
+    private boolean hasMPDContent;
     private Map<String, String> httpHeaders;
     
     public VideoInfo() {
@@ -134,20 +134,20 @@ public class VideoInfo {
         isDetectedBySuperX = detectedBySuperX;
     }
     
-    public boolean isM3U8() {
-        return isM3U8;
+    public boolean hasM3U8Content() {
+        return hasM3U8Content;
     }
     
     public void setM3U8(boolean m3u8) {
-        isM3U8 = m3u8;
+        this.hasM3U8Content = m3u8;
     }
     
-    public boolean isMpd() {
-        return isMPD;
+    public boolean hasMPDContent() {
+        return hasMPDContent;
     }
     
     public void setMpd(boolean mpd) {
-        isMPD = mpd;
+        this.hasMPDContent = mpd;
     }
     
     public Map<String, String> getHttpHeaders() {
@@ -168,7 +168,7 @@ public class VideoInfo {
     }
     
     public boolean isM3u8() {
-        if (isM3U8) return true;
+        if (hasM3U8Content) return true;
         if (formats != null && formats.getFormats() != null) {
             for (VideoFormat format : formats.getFormats()) {
                 if (format.isM3u8()) return true;
@@ -178,7 +178,7 @@ public class VideoInfo {
     }
     
     public boolean isMpd() {
-        if (isMPD) return true;
+        if (hasMPDContent) return true;
         if (formats != null && formats.getFormats() != null) {
             for (VideoFormat format : formats.getFormats()) {
                 if (format.isMpd()) return true;
