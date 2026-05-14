@@ -4,14 +4,60 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    
-    <!-- সাদা বৃত্ত -->
+
+    <!-- গ্রেডিয়েন্ট বৃত্ত (ব্যাকগ্রাউন্ড হিসেবে সাদা রঙ) -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M54,54m40,0a40,40 0,1 1,80 0a40,40 0,1 1,-80 0"/>
-        
-    <!-- মাঝে 'P' লেটার (সবুজ) -->
+        android:pathData="M54,54m-40,0a40,40 0,1 1,80 0a40,40 0,1 1,-80 0"/>
+    
+    <!-- বাইরের বৃত্ত রিং (ব্লু) -->
     <path
-        android:fillColor="#4CAF50"
-        android:pathData="M42,70V38h14c6,0 10,4 10,9c0,5 -4,9 -10,9h-8v14h-6zM48,52h7c2.5,0 4.5,-1.5 4.5,-5s-2,-5 -4.5,-5h-7v10z"/>
+        android:fillColor="#1565C0"
+        android:pathData="M54,54m-36,0a36,36 0,1 1,72 0a36,36 0,1 1,-72 0"
+        android:strokeWidth="3"
+        android:strokeColor="#1565C0"/>
+    
+    <!-- ইনার গ্রেডিয়েন্ট সার্কেল -->
+    <path
+        android:fillColor="#0D47A1"
+        android:pathData="M54,54m-33,0a33,33 0,1 1,66 0a33,33 0,1 1,-66 0"/>
+    
+    <!-- গ্লোব grid lines (হালকা নীল) -->
+    <path
+        android:strokeColor="#64B5F6"
+        android:strokeWidth="0.8"
+        android:pathData="M54,24 L54,84"/>
+    <path
+        android:strokeColor="#64B5F6"
+        android:strokeWidth="0.8"
+        android:pathData="M24,54 L84,54"/>
+    <path
+        android:strokeColor="#64B5F6"
+        android:strokeWidth="0.8"
+        android:pathData="M30,30 Q54,42 78,30"/>
+    <path
+        android:strokeColor="#64B5F6"
+        android:strokeWidth="0.8"
+        android:pathData="M30,78 Q54,66 78,78"/>
+    
+    <!-- "P" লেটার (হোয়াইট, গ্রেডিয়েন্ট স্ট্রোক) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M43,72V38h12c5,0 8,3 8,7.5c0,4.5 -3,7.5 -8,7.5h-6v19H43zM49,51h5c1.8,0 3,-1.2 3,-3s-1.2,-3 -3,-3h-5v6z"/>
+    
+    <!-- "P" এর উপরে হাইলাইট -->
+    <path
+        android:fillColor="#E3F2FD"
+        android:fillAlpha="0.3"
+        android:pathData="M43,38h20c0,0 3,-2 3,-5c0,-3 -3,-5 -3,-5H43v10z"/>
+    
+    <!-- বাইরের গ্লো রিং (হালকা সাদা) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.15"
+        android:pathData="M54,54m-38,0a38,38 0,1 1,76 0a38,38 0,1 1,-76 0"
+        android:strokeWidth="2"
+        android:strokeColor="#FFFFFF"
+        android:strokeAlpha="0.2"/>
+    
 </vector>
