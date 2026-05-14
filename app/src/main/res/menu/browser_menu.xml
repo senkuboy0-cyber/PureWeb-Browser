@@ -7,5 +7,6 @@
     <item android:id="@+id/menu_videos" android:title="🎬 Videos"/>
     <item android:id="@+id/menu_active_extensions" android:title="Active Extensions"/>
     <item android:id="@+id/menu_devtools" android:title="DevTools"/>
+    <item android:id="@+id/menu_proxy" android:title="Toggle Proxy"/>
     <item android:id="@+id/menu_settings" android:title="Settings"/>
 </menu>
