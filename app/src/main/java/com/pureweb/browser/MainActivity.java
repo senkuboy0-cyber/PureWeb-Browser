@@ -6,10 +6,13 @@ import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
+import android.webkit.CookieManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -17,6 +20,7 @@ import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.media3.common.MediaItem;
@@ -25,16 +29,26 @@ import androidx.media3.ui.PlayerView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+
 import org.mozilla.geckoview.AllowOrDeny;
 import org.mozilla.geckoview.GeckoResult;
 import org.mozilla.geckoview.GeckoRuntime;
 import org.mozilla.geckoview.GeckoSession;
 import org.mozilla.geckoview.GeckoView;
 import org.mozilla.geckoview.WebExtension;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -47,18 +61,27 @@ public class MainActivity extends AppCompatActivity {
     private ImageButton btnBack, btnForward, btnHome, btnRefresh, menuBtn;
     private boolean canGoBack = false;
 
-    // Video detection
+    // Video detection - improved
     private final List<Map<String, String>> detectedVideos = new ArrayList<>();
+    private final Set<String> verifiedVideoUrls = new HashSet<>();
     private VideoDownloadManager downloadManager;
     private ExoPlayer exoPlayer;
+    private ExecutorService videoVerifierExecutor;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+
+    // Video file size threshold (5MB minimum)
+    private static final long MIN_VIDEO_SIZE = 5 * 1024 * 1024;
+
+    // Filter regex for non-video files
+    private static final String FILTER_REGEX = ".*\\.(apk|html|xml|ico|css|js|png|gif|json|jpg|jpeg|svg|woff|woff2|ttf|otf|cur|webp|bmp|tif|tiff|psd|ai|eps|pdf|doc|docx|xls|xlsx|ppt|pptx|csv|md|rtf|vtt|srt|swf|jar|log|txt|m4s)$";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         prefs = getSharedPreferences("PureWebPrefs", MODE_PRIVATE);
         downloadManager = new VideoDownloadManager(this);
+        videoVerifierExecutor = Executors.newCachedThreadPool();
 
         geckoView  = findViewById(R.id.geckoView);
         urlBar     = findViewById(R.id.urlBar);
@@ -72,18 +95,16 @@ public class MainActivity extends AppCompatActivity {
         if (runtime == null) {
             runtime = GeckoRuntime.create(this);
         }
-
         if (session == null) {
             session = new GeckoSession();
         }
-
         if (!session.isOpen()) {
             session.open(runtime);
         }
 
         geckoView.setSession(session);
 
-        // Navigation Delegate — back button + video URL intercept
+        // Navigation Delegate
         session.setNavigationDelegate(new GeckoSession.NavigationDelegate() {
             @Override
             public void onCanGoBack(GeckoSession session, boolean canGoBack) {
@@ -104,26 +125,28 @@ public class MainActivity extends AppCompatActivity {
                         String title    = uri.getQueryParameter("title");
 
                         if (videoUrl != null && !videoUrl.isEmpty()) {
-                            // Duplicate check
-                            boolean exists = false;
-                            for (Map<String, String> v : detectedVideos) {
-                                if (videoUrl.equals(v.get("url"))) {
-                                    exists = true;
-                                    break;
-                                }
-                            }
-                            if (!exists) {
-                                Map<String, String> video = new HashMap<>();
-                                video.put("url",   videoUrl);
-                                video.put("type",  type  != null ? type  : "video");
-                                video.put("title", title != null ? title : "Video");
-                                detectedVideos.add(video);
-                                runOnUiThread(() ->
-                                    Toast.makeText(MainActivity.this,
-                                        "🎬 Video detected! (" + detectedVideos.size() + ")",
-                                        Toast.LENGTH_SHORT).show()
-                                );
-                            }
+                            // Clean URL (remove duplicates)
+                            String cleanUrl = cleanVideoUrl(videoUrl);
+
+                            // Verify and add video asynchronously
+                            verifyAndAddVideo(cleanUrl, type, title);
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    return GeckoResult.fromValue(AllowOrDeny.DENY);
+                }
+
+                // M3U8 (HLS) manifest detected
+                if (request.uri.startsWith("pureweb://m3u8")) {
+                    try {
+                        Uri uri = Uri.parse(request.uri);
+                        String m3u8Url = uri.getQueryParameter("url");
+                        String title = uri.getQueryParameter("title");
+
+                        if (m3u8Url != null && !m3u8Url.isEmpty()) {
+                            // Parse M3U8 and add segment URLs
+                            parseM3U8Manifest(m3u8Url, title);
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -142,8 +165,8 @@ public class MainActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     progressBar.setVisibility(View.VISIBLE);
                     urlBar.setText(url);
-                    // নতুন page এ পুরনো video list clear
                     detectedVideos.clear();
+                    verifiedVideoUrls.clear();
                 });
             }
 
@@ -151,7 +174,6 @@ public class MainActivity extends AppCompatActivity {
             public void onPageStop(GeckoSession session, boolean success) {
                 runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);
-                    // YouTube বাদে সব page এ sniffer inject
                     String url = urlBar.getText().toString();
                     if (!url.contains("youtube.com") && !url.contains("youtu.be")) {
                         injectVideoSniffer();
@@ -202,36 +224,302 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
-    // ─── Video Sniffer Injection ──────────────────────────────────────────────
+    // Clean video URL - remove query params for deduplication
+    private String cleanVideoUrl(String url) {
+        try {
+            if (url.contains(".m3u8") || url.contains(".mpd")) {
+                return url;
+            }
+            // Keep URL with essential params, remove tracking params
+            int queryIndex = url.indexOf("?");
+            if (queryIndex > 0) {
+                String baseUrl = url.substring(0, queryIndex);
+                String queryParams = url.substring(queryIndex + 1);
+                // Keep only token/session params if present
+                if (queryParams.contains("token=") || queryParams.contains("signature=")) {
+                    return url;
+                }
+                return baseUrl;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return url;
+    }
 
+    // ─── Improved Video Verification ──────────────────────────────────────────
+    private void verifyAndAddVideo(String videoUrl, String type, String title) {
+        // Skip if already verified
+        if (verifiedVideoUrls.contains(videoUrl)) {
+            return;
+        }
+
+        // Skip filtered file types
+        if (videoUrl.matches(FILTER_REGEX)) {
+            return;
+        }
+
+        videoVerifierExecutor.execute(() -> {
+            HttpURLConnection connection = null;
+            try {
+                URL url = new URL(videoUrl);
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("GET");
+                connection.setConnectTimeout(5000);
+                connection.setReadTimeout(5000);
+
+                // Add cookies for authenticated content
+                String cookies = CookieManager.getInstance().getCookie(videoUrl);
+                if (cookies != null && !cookies.isEmpty()) {
+                    connection.setRequestProperty("Cookie", cookies);
+                }
+
+                // Add User-Agent
+                connection.setRequestProperty("User-Agent",
+                    "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36");
+
+                connection.connect();
+                int responseCode = connection.getResponseCode();
+
+                // Handle 401/403 - try without auth
+                if (responseCode == 401 || responseCode == 403) {
+                    connection.disconnect();
+                    connection = (HttpURLConnection) new URL(videoUrl).openConnection();
+                    connection.setRequestMethod("GET");
+                    connection.setConnectTimeout(5000);
+                    connection.setReadTimeout(5000);
+                    connection.setRequestProperty("User-Agent",
+                        "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36");
+                    connection.connect();
+                }
+
+                String contentType = connection.getContentType();
+                long contentLength = connection.getContentLengthLong();
+
+                boolean isVideo = contentType != null && (
+                    contentType.contains("video") ||
+                    contentType.contains("audio") ||
+                    contentType.contains("application/octet-stream")
+                );
+
+                // Check for M3U8 content
+                if (contentType != null && contentType.contains("mpegurl")) {
+                    mainHandler.post(() -> notifyM3U8Detected(videoUrl, title));
+                    return;
+                }
+
+                // Check for MPD (DASH) content
+                if (contentType != null && contentType.contains("dash")) {
+                    mainHandler.post(() -> addVideoToList(videoUrl, "dash", title));
+                    return;
+                }
+
+                // For octet-stream, check the actual content
+                if (contentType != null && contentType.contains("application/octet-stream")) {
+                    BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(connection.getInputStream()));
+                    char[] buffer = new char[10];
+                    int read = reader.read(buffer, 0, 10);
+                    reader.close();
+
+                    if (read > 0) {
+                        String content = new String(buffer, 0, read);
+                        if (content.startsWith("#EXTM3U")) {
+                            mainHandler.post(() -> notifyM3U8Detected(videoUrl, title));
+                            return;
+                        }
+                    }
+                }
+
+                // Check file size for regular videos
+                boolean isLargeEnough = contentLength > MIN_VIDEO_SIZE;
+
+                if (isVideo && (isLargeEnough || contentLength <= 0)) {
+                    verifiedVideoUrls.add(videoUrl);
+                    String finalType = contentType != null && contentType.contains("audio") ? "audio" : type;
+                    mainHandler.post(() -> addVideoToList(videoUrl, finalType, title));
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                if (connection != null) {
+                    connection.disconnect();
+                }
+            }
+        });
+    }
+
+    // Notify M3U8 manifest detected
+    private void notifyM3U8Detected(String m3u8Url, String title) {
+        Toast.makeText(this, "📺 HLS Stream detected!", Toast.LENGTH_SHORT).show();
+        // Parse the M3U8 manifest
+        parseM3U8Manifest(m3u8Url, title);
+    }
+
+    // Parse M3U8 manifest to get segment URLs
+    private void parseM3U8Manifest(String m3u8Url, String title) {
+        videoVerifierExecutor.execute(() -> {
+            HttpURLConnection connection = null;
+            try {
+                URL url = new URL(m3u8Url);
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("GET");
+                connection.setConnectTimeout(10000);
+                connection.setReadTimeout(10000);
+
+                // Add cookies
+                String cookies = CookieManager.getInstance().getCookie(m3u8Url);
+                if (cookies != null && !cookies.isEmpty()) {
+                    connection.setRequestProperty("Cookie", cookies);
+                }
+                connection.setRequestProperty("User-Agent",
+                    "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36");
+
+                connection.connect();
+
+                BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(connection.getInputStream()));
+                StringBuilder manifest = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    manifest.append(line).append("\n");
+                }
+                reader.close();
+
+                // Parse M3U8 segments
+                parseM3U8Segments(manifest.toString(), m3u8Url, title);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                if (connection != null) {
+                    connection.disconnect();
+                }
+            }
+        });
+    }
+
+    // Parse M3U8 content and extract segment URLs
+    private void parseM3U8Segments(String manifest, String baseUrl, String title) {
+        try {
+            String[] lines = manifest.split("\n");
+            String lastSegmentUrl = "";
+            boolean isMasterPlaylist = false;
+
+            for (int i = 0; i < lines.length; i++) {
+                String line = lines[i].trim();
+
+                // Master playlist - contains variant streams
+                if (line.startsWith("#EXT-X-STREAM-INF")) {
+                    isMasterPlaylist = true;
+                }
+
+                // Segment URL
+                if (!line.startsWith("#") && line.length() > 0) {
+                    String segmentUrl;
+
+                    if (line.startsWith("http")) {
+                        segmentUrl = line;
+                    } else {
+                        // Relative URL - resolve against base
+                        URL base = new URL(baseUrl);
+                        segmentUrl = new URL(base, line).toString();
+                    }
+
+                    // Check if already added
+                    if (!verifiedVideoUrls.contains(segmentUrl)) {
+                        verifiedVideoUrls.add(segmentUrl);
+                        final String url = segmentUrl;
+                        mainHandler.post(() -> addVideoToList(url, "hls_segment", title != null ? title : "HLS Segment"));
+                    }
+
+                    lastSegmentUrl = segmentUrl;
+                }
+
+                // Single video from master playlist - take the best quality
+                if (isMasterPlaylist && line.startsWith("http") && i == lines.length - 1) {
+                    if (!verifiedVideoUrls.contains(line)) {
+                        verifiedVideoUrls.add(line);
+                        final String url = line;
+                        mainHandler.post(() -> addVideoToList(url, "hls_variant", title != null ? title : "HLS Variant"));
+                    }
+                }
+            }
+
+            // If single segment, add the base M3U8 URL
+            if (!lastSegmentUrl.isEmpty() && lastSegmentUrl.equals(baseUrl.replace(".m3u8", "/segment.m3u8"))) {
+                if (!verifiedVideoUrls.contains(baseUrl)) {
+                    verifiedVideoUrls.add(baseUrl);
+                    mainHandler.post(() -> addVideoToList(baseUrl, "m3u8", title != null ? title : "HLS Manifest"));
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Add video to list on main thread
+    private void addVideoToList(String url, String type, String title) {
+        // Check for duplicates
+        for (Map<String, String> v : detectedVideos) {
+            if (url.equals(v.get("url"))) {
+                return;
+            }
+        }
+
+        Map<String, String> video = new HashMap<>();
+        video.put("url", url);
+        video.put("type", type != null ? type : "video");
+        video.put("title", title != null ? title : "Video");
+        detectedVideos.add(video);
+
+        runOnUiThread(() ->
+            Toast.makeText(MainActivity.this,
+                "🎬 Video detected! (" + detectedVideos.size() + ")",
+                Toast.LENGTH_SHORT).show()
+        );
+    }
+
+    // ─── Video Sniffer Injection (Improved) ─────────────────────────────────────────
     private void injectVideoSniffer() {
         String js = "javascript:(function(){" +
             "if(window.__pw)return;window.__pw=true;" +
-            "var VP=/\\.(mp4|webm|m3u8|mpd|ts|mkv|mov|flv)/i;" +
+
+            "var VP=/\\.(mp4|webm|m3u8|mpd|ts|mkv|mov|flv|mp3|aac|ogg|wav)/i;" +
             "var det=new Set();" +
             "var q=[];var snd=false;" +
+
             "function nxt(){" +
                 "if(q.length===0){snd=false;return;}" +
                 "snd=true;var i=q.shift();" +
-                "window.location.href='pureweb://video?url='+i.u+'&type='+i.t+'&title='+i.l;" +
+                "window.location.href='pureweb://video?url='+encodeURIComponent(i.u)+'&type='+i.t+'&title='+encodeURIComponent(i.l);" +
                 "setTimeout(nxt,200);" +
             "}" +
+
             "function notify(url,type){" +
                 "if(!url||det.has(url))return;det.add(url);" +
-                "q.push({u:encodeURIComponent(url),t:type,l:encodeURIComponent(document.title||'')});" +
+                "q.push({u:url,t:type,l:document.title||'Video'});" +
                 "if(!snd)nxt();" +
             "}" +
+
+            // Intercept XHR
             "var ox=XMLHttpRequest.prototype.open;" +
             "XMLHttpRequest.prototype.open=function(m,u){" +
                 "if(typeof u==='string'&&VP.test(u))notify(u,'xhr');" +
                 "return ox.apply(this,arguments);" +
             "};" +
+
+            // Intercept Fetch
             "if(window.fetch){var of=window.fetch;" +
             "window.fetch=function(i,o){" +
                 "var u=typeof i==='string'?i:(i&&i.url?i.url:'');" +
                 "if(u&&VP.test(u))notify(u,'fetch');" +
                 "return of.apply(this,arguments);" +
             "};}" +
+
+            // Detect video elements
             "function chkV(v){" +
                 "var s=[v.src,v.currentSrc];" +
                 "v.querySelectorAll('source').forEach(function(x){s.push(x.src);});" +
@@ -242,10 +530,24 @@ public class MainActivity extends AppCompatActivity {
                     "}" +
                 "});" +
             "}" +
+
+            // Detect M3U8 specifically (HLS streaming)
+            "function detectM3U8(){" +
+                "document.querySelectorAll('source[src*=\".m3u8\"], video source[src*=\".m3u8\"], a[href*=\".m3u8\"]').forEach(function(el){" +
+                    "var src=el.src||el.href;" +
+                    "if(src&&VP.test(src))notify(src,'m3u8');" +
+                "});" +
+            "}" +
+
+            // Periodic M3U8 detection for dynamic content
+            "setInterval(detectM3U8,2000);" +
+
             "new MutationObserver(function(){" +
                 "document.querySelectorAll('video').forEach(chkV);" +
+                "detectM3U8();" +
             "}).observe(document.documentElement,{childList:true,subtree:true});" +
             "document.querySelectorAll('video').forEach(chkV);" +
+            "detectM3U8();" +
         "})();";
 
         session.loadUri(js);
@@ -289,7 +591,6 @@ public class MainActivity extends AppCompatActivity {
         BottomSheetDialog dialog = new BottomSheetDialog(this);
         View view = LayoutInflater.from(this)
                 .inflate(R.layout.video_player_sheet, null);
-
         PlayerView playerView = view.findViewById(R.id.playerView);
         Button btnDownload    = view.findViewById(R.id.btnDownload);
 
@@ -336,6 +637,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         if (exoPlayer != null) { exoPlayer.release(); exoPlayer = null; }
+        if (videoVerifierExecutor != null) {
+            videoVerifierExecutor.shutdown();
+        }
         if (isFinishing()) {
             if (session != null) { session.close(); session = null; }
         }
@@ -369,7 +673,6 @@ public class MainActivity extends AppCompatActivity {
             popup.getMenuInflater().inflate(R.menu.browser_menu, popup.getMenu());
             popup.setOnMenuItemClickListener(item -> {
                 int id = item.getItemId();
-
                 if (id == R.id.menu_settings) {
                     startActivity(new Intent(this, SettingsActivity.class));
                     return true;
