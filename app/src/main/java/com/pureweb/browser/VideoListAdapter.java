@@ -4,7 +4,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -59,7 +58,6 @@ public class VideoListAdapter extends RecyclerView.Adapter<VideoListAdapter.Vide
         private TextView tvType;
         private Button btnPreview;
         private Button btnDownload;
-        private ImageView ivIcon;
 
         VideoViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -67,7 +65,6 @@ public class VideoListAdapter extends RecyclerView.Adapter<VideoListAdapter.Vide
             tvType = itemView.findViewById(R.id.tvVideoType);
             btnPreview = itemView.findViewById(R.id.btnPreview);
             btnDownload = itemView.findViewById(R.id.btnDownload);
-            ivIcon = itemView.findViewById(R.id.ivVideoType);
         }
 
         void bind(VideoInfo video) {
@@ -95,15 +92,6 @@ public class VideoListAdapter extends RecyclerView.Adapter<VideoListAdapter.Vide
             
             tvType.setText(typeText);
             tvType.setBackgroundColor(bgColor);
-            
-            // Icon based on type
-            if (video.isM3u8()) {
-                ivIcon.setText("📺");
-            } else if (video.isMpd()) {
-                ivIcon.setText("🎞️");
-            } else {
-                ivIcon.setText("📹");
-            }
             
             // Download button
             btnDownload.setOnClickListener(v -> {
