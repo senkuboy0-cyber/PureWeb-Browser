@@ -3,6 +3,7 @@ package com.pureweb.browser.manager;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 
 import com.pureweb.browser.data.VideoFormat;
 import com.pureweb.browser.data.VideoFormats;
@@ -17,17 +18,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Video Detection Manager - Coordinates video detection from websites
- * Combines JS injection + Proxy traffic + URL verification + content parsing
- * 
- * Similar to super-video-downloader's GlobalVideoDetectionModel
+ * Video Detection Manager - Coordinated video detection from websites
+ * Groups HLS segments into single video entries
  */
 public class VideoDetectionManager {
 
+    private static final String TAG = "VideoDetection";
     private static VideoDetectionManager instance;
     private Context context;
     private VideoRepository videoRepository;
@@ -38,7 +39,10 @@ public class VideoDetectionManager {
     
     // Track verified URLs to avoid duplicates
     private final Set<String> verifiedUrls = new HashSet<>();
-    private final Map<String, VideoInfo> detectedVideos = new HashMap<>();
+    private final Map<String, VideoInfo> detectedVideos = new ConcurrentHashMap<>();
+    
+    // HLS Stream Groups - Group segments by their M3U8 manifest
+    private final Map<String, HlsStreamGroup> hlsStreamGroups = new ConcurrentHashMap<>();
     
     // Listeners
     private List<VideoDetectionListener> listeners = new ArrayList<>();
@@ -48,12 +52,11 @@ public class VideoDetectionManager {
     private boolean checkOnAudio = true;
     private boolean useProxyDetection = true;
     
-    // Minimum video file size (5MB)
-    private static final long MIN_VIDEO_SIZE = 5 * 1024 * 1024;
+    // Minimum video file size (100KB for segments)
+    private static final long MIN_SEGMENT_SIZE = 100 * 1024;
     
-    // Filter regex for non-video files
-    private static final String FILTER_REGEX = 
-            ".*\\.(apk|html|xml|ico|css|js|png|gif|json|jpg|jpeg|svg|woff|woff2|ttf|otf|cur|webp|bmp|tif|tiff|psd|ai|eps|pdf|doc|docx|xls|xlsx|ppt|pptx|csv|md|rtf|vtt|srt|swf|jar|log|txt|m4s)$";
+    // Maximum segments to group (prevent too many)
+    private static final int MAX_SEGMENTS_PER_GROUP = 500;
     
     private VideoDetectionManager(Context context) {
         this.context = context.getApplicationContext();
@@ -63,7 +66,6 @@ public class VideoDetectionManager {
         this.executor = Executors.newCachedThreadPool();
         this.mainHandler = new Handler(Looper.getMainLooper());
         
-        // Connect to proxy for traffic-based detection
         proxyController.setVideoDetectionListener(new ProxyController.VideoDetectionFromProxyListener() {
             @Override
             public void onVideoDetectedFromProxy(VideoInfo videoInfo) {
@@ -85,64 +87,35 @@ public class VideoDetectionManager {
         return instance;
     }
     
-    /**
-     * Add detection listener
-     */
     public void addListener(VideoDetectionListener listener) {
         if (!listeners.contains(listener)) {
             listeners.add(listener);
         }
     }
     
-    /**
-     * Remove detection listener
-     */
     public void removeListener(VideoDetectionListener listener) {
         listeners.remove(listener);
     }
     
-    /**
-     * Clear all detected videos
-     */
     public void clearDetectedVideos() {
         verifiedUrls.clear();
         detectedVideos.clear();
+        hlsStreamGroups.clear();
         notifyVideosCleared();
     }
     
-    /**
-     * Start proxy-based detection
-     */
     public void startProxyDetection() {
         if (useProxyDetection && !proxyController.isProxyRunning()) {
             proxyController.startLocalProxy();
         }
     }
     
-    /**
-     * Stop proxy-based detection
-     */
     public void stopProxyDetection() {
         proxyController.stopProxy();
     }
     
     /**
-     * Set detection settings
-     */
-    public void setDetectByUrl(boolean detect) {
-        this.detectByUrl = detect;
-    }
-    
-    public void setCheckOnAudio(boolean check) {
-        this.checkOnAudio = check;
-    }
-    
-    public void setUseProxyDetection(boolean use) {
-        this.useProxyDetection = use;
-    }
-    
-    /**
-     * Process a detected video URL from JS injection
+     * Process a detected video URL
      */
     public void processDetectedUrl(String url, String type, String title) {
         if (url == null || url.isEmpty()) return;
@@ -150,164 +123,158 @@ public class VideoDetectionManager {
         // Skip if already verified
         if (verifiedUrls.contains(url)) return;
         
-        // Skip filtered files
-        if (url.matches(FILTER_REGEX)) return;
-        
-        // Skip non-HTTP URLs (except blob)
-        if (!url.startsWith("http") && !url.startsWith("blob")) return;
-        
-        mainHandler.post(() -> notifyVideoDetecting(url));
-        
-        executor.execute(() -> verifyAndProcessUrl(url, type, title));
-    }
-    
-    /**
-     * Process URL detected from proxy traffic
-     */
-    public void processProxyUrl(String url) {
-        if (url == null || url.isEmpty()) return;
-        if (verifiedUrls.contains(url)) return;
-        if (url.matches(FILTER_REGEX)) return;
-        
         mainHandler.post(() -> notifyVideoDetecting(url));
         
         executor.execute(() -> {
-            if (detectByUrl) {
-                verifyAndProcessUrl(url, null, null);
+            // Check if it's a segment file
+            if (isSegmentUrl(url)) {
+                // Group segments together
+                processSegmentUrl(url, type, title);
+            } else if (isM3U8Url(url)) {
+                // Direct M3U8 URL
+                processM3U8Video(url, title);
+            } else if (isMpdUrl(url)) {
+                processMPDVideo(url, title);
+            } else {
+                // Regular video
+                verifyAndProcessUrl(url, type, title);
             }
         });
     }
     
     /**
-     * Verify URL and process it
+     * Check if URL is a segment file (.ts, .m4s, etc.)
      */
-    private void verifyAndProcessUrl(String url, String type, String title) {
-        try {
-            // Check if M3U8 or MPD
-            if (url.contains(".m3u8") || (type != null && type.contains("m3u8"))) {
-                processM3U8Video(url, title);
-                return;
-            }
-            
-            if (url.contains(".mpd")) {
-                processMPDVideo(url, title);
-                return;
-            }
-            
-            // Verify with HTTP request
-            HttpClient.ContentType contentType = httpClient.verifyVideoUrl(url);
-            
-            switch (contentType.getType()) {
-                case M3U8:
-                    processM3U8Video(url, title);
-                    break;
-                case MPD:
-                    processMPDVideo(url, title);
-                    break;
-                case VIDEO:
-                case AUDIO:
-                    if (type == null || type.equals("audio")) {
-                        if (checkOnAudio) {
-                            processRegularVideo(url, contentType, title);
-                        }
-                    } else {
-                        processRegularVideo(url, contentType, title);
-                    }
-                    break;
-                case OCTET_STREAM:
-                    // Might be video - check content
-                    checkOctetStreamContent(url, contentType, title);
-                    break;
-                default:
-                    // Try as regular video if URL suggests it
-                    if (isLikelyVideoUrl(url)) {
-                        processRegularVideo(url, contentType, title);
-                    }
-                    break;
-            }
-            
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    private boolean isSegmentUrl(String url) {
+        return url.contains(".ts") || 
+               url.contains(".m4s") || 
+               url.contains("/seg-") ||
+               url.contains("/segment") ||
+               url.contains("_seg_") ||
+               url.contains("-seg-");
     }
     
     /**
-     * Check if octet-stream is actually a video
+     * Check if URL is M3U8 manifest
      */
-    private void checkOctetStreamContent(String url, HttpClient.ContentType contentType, String title) {
+    private boolean isM3U8Url(String url) {
+        return url.contains(".m3u8") || url.contains("#EXTM3U");
+    }
+    
+    /**
+     * Check if URL is MPD manifest
+     */
+    private boolean isMpdUrl(String url) {
+        return url.contains(".mpd");
+    }
+    
+    /**
+     * Process segment URL - Group segments by base URL
+     */
+    private void processSegmentUrl(String url, String type, String title) {
         try {
-            byte[] firstBytes = httpClient.fetchBytes(url);
-            if (firstBytes != null && firstBytes.length > 0) {
-                String content = new String(firstBytes, 0, Math.min(firstBytes.length, 20));
+            // Generate group ID based on URL pattern
+            String groupId = generateGroupId(url);
+            
+            HlsStreamGroup group = hlsStreamGroups.get(groupId);
+            if (group == null) {
+                group = new HlsStreamGroup(groupId, title != null ? title : "HLS Stream");
+                hlsStreamGroups.put(groupId, group);
+            }
+            
+            // Add segment to group
+            if (group.addSegment(url)) {
+                verifiedUrls.add(url);
                 
-                if (content.startsWith("#EXTM3U")) {
-                    processM3U8Video(url, title);
-                    return;
-                }
-                if (content.contains("<MPD")) {
-                    processMPDVideo(url, title);
-                    return;
+                // Check if we have enough segments
+                if (group.getSegmentCount() >= 3) {
+                    // Create video entry from group
+                    VideoInfo videoInfo = group.createVideoInfo();
+                    if (videoInfo != null && !detectedVideos.containsKey(groupId)) {
+                        detectedVideos.put(groupId, videoInfo);
+                        mainHandler.post(() -> notifyVideoDetected(videoInfo));
+                        
+                        // Also try to find M3U8 manifest
+                        String m3u8Url = findM3U8FromSegments(url);
+                        if (m3u8Url != null && !verifiedUrls.contains(m3u8Url)) {
+                            mainHandler.post(() -> notifyM3U8Detected(m3u8Url));
+                        }
+                    }
                 }
             }
-            
-            // Check by content length
-            if (contentType.getContentLength() > MIN_VIDEO_SIZE) {
-                processRegularVideo(url, contentType, title);
-            }
-            
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e(TAG, "Error processing segment: " + e.getMessage());
         }
     }
     
     /**
-     * Process regular video URL
+     * Generate group ID from segment URL
      */
-    private void processRegularVideo(String url, HttpClient.ContentType contentType, String title) {
-        if (verifiedUrls.contains(url)) return;
-        
-        // Check minimum size
-        long size = contentType.getContentLength();
-        if (size > 0 && size < MIN_VIDEO_SIZE) {
-            return;
+    private String generateGroupId(String url) {
+        // Try to find common base URL
+        try {
+            // Remove segment number and get base
+            String base = url;
+            
+            // Pattern: .../segment_0.ts or .../seg-0.ts or .../0.ts
+            String[] patterns = {
+                "/segment_", "/seg-", "/_seg_", 
+                "/dash/", "/hls/", "/v1/", "/v2/"
+            };
+            
+            for (String pattern : patterns) {
+                int idx = url.lastIndexOf(pattern);
+                if (idx > 0) {
+                    base = url.substring(0, idx);
+                    break;
+                }
+            }
+            
+            // Try to extract stream ID
+            if (base.contains("?")) {
+                base = base.substring(0, base.indexOf("?"));
+            }
+            
+            return base;
+        } catch (Exception e) {
+            return url;
         }
-        
-        verifiedUrls.add(url);
-        
-        VideoInfo videoInfo = new VideoInfo();
-        videoInfo.setId(url);
-        videoInfo.setTitle(title != null ? title : extractTitleFromUrl(url));
-        videoInfo.setOriginalUrl(url);
-        videoInfo.setDownloadUrls(new ArrayList<>());
-        videoInfo.getDownloadUrls().add(url);
-        videoInfo.setExt(getExtensionFromUrl(url));
-        videoInfo.setRegularDownload(true);
-        
-        VideoFormats formats = new VideoFormats();
-        VideoFormat format = new VideoFormat(url);
-        format.setFormatId("0");
-        format.setFormat("default");
-        format.setExt(videoInfo.getExt());
-        format.setFileSize(size);
-        formats.addFormat(format);
-        videoInfo.setFormats(formats);
-        
-        detectedVideos.put(url, videoInfo);
-        
-        mainHandler.post(() -> notifyVideoDetected(videoInfo));
     }
     
     /**
-     * Process M3U8 (HLS) video
+     * Try to find M3U8 manifest URL from segment URL
+     */
+    private String findM3U8FromSegments(String segmentUrl) {
+        try {
+            // Common patterns for M3U8 URL
+            String[] possibleM3U8Patterns = {
+                segmentUrl.replaceAll("/[^/]+\\.ts", "/master.m3u8"),
+                segmentUrl.replaceAll("/[^/]+\\.ts", "/playlist.m3u8"),
+                segmentUrl.replaceAll("/[^/]+\\.ts", "/index.m3u8"),
+                segmentUrl.replaceAll("/[^/]+\\.ts", ".m3u8")
+            };
+            
+            for (String m3u8Url : possibleM3U8Patterns) {
+                HttpClient.ContentType contentType = httpClient.verifyVideoUrl(m3u8Url);
+                if (contentType.isM3U8()) {
+                    return m3u8Url;
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error finding M3U8: " + e.getMessage());
+        }
+        return null;
+    }
+    
+    /**
+     * Process M3U8 manifest
      */
     private void processM3U8Video(String url, String title) {
         if (verifiedUrls.contains(url)) return;
-        
         verifiedUrls.add(url);
         
         mainHandler.post(() -> notifyM3U8Detected(url));
         
-        // Get full video info from repository
         VideoInfo videoInfo = videoRepository.getVideoInfo(url, true, false, checkOnAudio);
         
         if (videoInfo != null && !videoInfo.getDownloadUrls().isEmpty()) {
@@ -317,11 +284,10 @@ public class VideoDetectionManager {
     }
     
     /**
-     * Process MPD (DASH) video
+     * Process MPD manifest
      */
     private void processMPDVideo(String url, String title) {
         if (verifiedUrls.contains(url)) return;
-        
         verifiedUrls.add(url);
         
         mainHandler.post(() -> notifyMPDDetected(url));
@@ -335,18 +301,42 @@ public class VideoDetectionManager {
     }
     
     /**
-     * Check if URL is likely a video
+     * Verify and process regular video URL
      */
-    private boolean isLikelyVideoUrl(String url) {
-        return url.contains(".mp4") || url.contains(".webm") || 
-               url.contains(".mkv") || url.contains(".m4v") ||
-               url.contains(".mov") || url.contains(".avi") ||
-               url.contains(".flv");
+    private void verifyAndProcessUrl(String url, String type, String title) {
+        try {
+            HttpClient.ContentType contentType = httpClient.verifyVideoUrl(url);
+            
+            if (contentType.isVideo() || contentType.isM3U8() || contentType.isMPD()) {
+                if (!verifiedUrls.contains(url)) {
+                    verifiedUrls.add(url);
+                    
+                    VideoInfo videoInfo = new VideoInfo();
+                    videoInfo.setId(url);
+                    videoInfo.setTitle(title != null ? title : extractTitleFromUrl(url));
+                    videoInfo.setOriginalUrl(url);
+                    videoInfo.setDownloadUrls(new ArrayList<>());
+                    videoInfo.getDownloadUrls().add(url);
+                    videoInfo.setExt(getExtensionFromUrl(url));
+                    videoInfo.setRegularDownload(true);
+                    
+                    VideoFormats formats = new VideoFormats();
+                    VideoFormat format = new VideoFormat(url);
+                    format.setFormatId("0");
+                    format.setFormat("default");
+                    format.setFileSize(contentType.getContentLength());
+                    formats.addFormat(format);
+                    videoInfo.setFormats(formats);
+                    
+                    detectedVideos.put(url, videoInfo);
+                    mainHandler.post(() -> notifyVideoDetected(videoInfo));
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error verifying URL: " + e.getMessage());
+        }
     }
     
-    /**
-     * Extract title from URL
-     */
     private String extractTitleFromUrl(String url) {
         try {
             String path = new java.net.URL(url).getPath();
@@ -357,21 +347,13 @@ public class VideoDetectionManager {
                 }
                 return fileName;
             }
-        } catch (Exception e) {
-            // Ignore
-        }
+        } catch (Exception ignored) {}
         return "Video";
     }
     
-    /**
-     * Get extension from URL
-     */
     private String getExtensionFromUrl(String url) {
-        if (url.contains(".m3u8")) return "m3u8";
-        if (url.contains(".mpd")) return "mpd";
         if (url.contains(".webm")) return "webm";
         if (url.contains(".mkv")) return "mkv";
-        if (url.contains(".m4v")) return "m4v";
         if (url.contains(".avi")) return "avi";
         if (url.contains(".flv")) return "flv";
         if (url.contains(".mov")) return "mov";
@@ -379,30 +361,25 @@ public class VideoDetectionManager {
         return "mp4";
     }
     
-    /**
-     * Get all detected videos
-     */
     public List<VideoInfo> getDetectedVideos() {
-        return new ArrayList<>(detectedVideos.values());
+        List<VideoInfo> videos = new ArrayList<>(detectedVideos.values());
+        // Sort by type (M3U8/MPD first, then segments)
+        videos.sort((a, b) -> {
+            if (a.isM3u8() || a.isMpd()) return -1;
+            if (b.isM3u8() || b.isMpd()) return 1;
+            return 0;
+        });
+        return videos;
     }
     
-    /**
-     * Get detected videos count
-     */
     public int getDetectedVideosCount() {
         return detectedVideos.size();
     }
     
-    /**
-     * Check if proxy is active
-     */
     public boolean isProxyActive() {
         return proxyController.isProxyRunning();
     }
     
-    /**
-     * Notification methods
-     */
     private void notifyVideoDetected(VideoInfo videoInfo) {
         for (VideoDetectionListener listener : listeners) {
             listener.onVideoDetected(videoInfo);
@@ -434,8 +411,60 @@ public class VideoDetectionManager {
     }
     
     /**
-     * Listener interface for video detection events
+     * HLS Stream Group - Groups segments together
      */
+    private class HlsStreamGroup {
+        private String groupId;
+        private String title;
+        private List<String> segments = new ArrayList<>();
+        private long creationTime;
+        
+        HlsStreamGroup(String groupId, String title) {
+            this.groupId = groupId;
+            this.title = title;
+            this.creationTime = System.currentTimeMillis();
+        }
+        
+        boolean addSegment(String segmentUrl) {
+            if (!segments.contains(segmentUrl) && segments.size() < MAX_SEGMENTS_PER_GROUP) {
+                segments.add(segmentUrl);
+                return true;
+            }
+            return false;
+        }
+        
+        int getSegmentCount() {
+            return segments.size();
+        }
+        
+        List<String> getSegments() {
+            return new ArrayList<>(segments);
+        }
+        
+        VideoInfo createVideoInfo() {
+            if (segments.isEmpty()) return null;
+            
+            VideoInfo videoInfo = new VideoInfo();
+            videoInfo.setId(groupId);
+            videoInfo.setTitle(title);
+            videoInfo.setOriginalUrl(groupId);
+            videoInfo.setDownloadUrls(new ArrayList<>(segments));
+            videoInfo.setExt("ts");
+            videoInfo.setRegularDownload(false);
+            
+            VideoFormats formats = new VideoFormats();
+            for (int i = 0; i < segments.size(); i++) {
+                VideoFormat format = new VideoFormat(segments.get(i));
+                format.setFormatId(String.valueOf(i));
+                format.setFormat("segment_" + i);
+                formats.addFormat(format);
+            }
+            videoInfo.setFormats(formats);
+            
+            return videoInfo;
+        }
+    }
+    
     public interface VideoDetectionListener {
         void onVideoDetected(VideoInfo videoInfo);
         void onVideoDetecting(String url);
