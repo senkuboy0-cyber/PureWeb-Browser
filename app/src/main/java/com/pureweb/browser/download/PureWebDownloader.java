@@ -34,8 +34,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * PureWeb Downloader - Main video downloader for PureWeb Browser
  * Handles regular video, HLS streams, and DASH streams
- * 
- * Similar to super-video-downloader's custom downloader
  */
 public class PureWebDownloader {
 
@@ -55,9 +53,6 @@ public class PureWebDownloader {
         return instance;
     }
     
-    /**
-     * Start download for a video
-     */
     public void download(VideoInfo videoInfo) {
         if (videoInfo == null || videoInfo.getFirstUrl() == null) {
             return;
@@ -81,49 +76,28 @@ public class PureWebDownloader {
                 .build();
         
         WorkManager.getInstance(context)
-                .enqueueUniqueWork(
-                        "download_" + workId,
-                        ExistingWorkPolicy.REPLACE,
-                        downloadRequest
-                );
+                .enqueueUniqueWork("download_" + workId, ExistingWorkPolicy.REPLACE, downloadRequest);
         
-        mainHandler.post(() -> 
-            Toast.makeText(context, "Download started!", Toast.LENGTH_SHORT).show()
-        );
+        mainHandler.post(() -> Toast.makeText(context, "Download started!", Toast.LENGTH_SHORT).show());
     }
     
-    /**
-     * Start download from URL
-     */
     public void download(String url, String title) {
         VideoInfo videoInfo = new VideoInfo(url);
         videoInfo.setTitle(title != null ? title : "Video");
         download(videoInfo);
     }
     
-    /**
-     * Cancel download
-     */
     public void cancelDownload(String videoId) {
-        WorkManager.getInstance(context)
-                .cancelUniqueWork("download_" + videoId);
+        WorkManager.getInstance(context).cancelUniqueWork("download_" + videoId);
     }
     
-    /**
-     * Check if download is in progress
-     */
     public boolean isDownloading(String videoId) {
         try {
             var workInfos = WorkManager.getInstance(context)
-                    .getWorkInfosForUniqueWork("download_" + videoId)
-                    .get();
-            
+                    .getWorkInfosForUniqueWork("download_" + videoId).get();
             if (workInfos.isEmpty()) return false;
-            
             for (var workInfo : workInfos) {
-                if (!workInfo.getState().isFinished()) {
-                    return true;
-                }
+                if (!workInfo.getState().isFinished()) return true;
             }
             return false;
         } catch (Exception e) {
@@ -131,9 +105,6 @@ public class PureWebDownloader {
         }
     }
     
-    /**
-     * Download keys for worker
-     */
     public static class DownloadKeys {
         public static final String KEY_VIDEO_ID = "video_id";
         public static final String KEY_VIDEO_URL = "video_url";
@@ -143,14 +114,10 @@ public class PureWebDownloader {
         public static final String KEY_IS_REGULAR = "is_regular";
     }
     
-    /**
-     * Download Worker - Handles background downloads
-     */
     public static class DownloadWorker extends Worker {
         
         private static final int NOTIFICATION_ID = 2001;
         private static final String CHANNEL_ID = "PureWebDownload";
-        
         private AtomicBoolean isCancelled = new AtomicBoolean(false);
         
         public DownloadWorker(@NonNull Context context, @NonNull WorkerParameters params) {
@@ -165,15 +132,12 @@ public class PureWebDownloader {
             boolean isM3u8 = getInputData().getBoolean(DownloadKeys.KEY_IS_M3U8, false);
             boolean isMpd = getInputData().getBoolean(DownloadKeys.KEY_IS_MPD, false);
             
-            if (videoUrl == null || videoUrl.isEmpty()) {
-                return Result.failure();
-            }
+            if (videoUrl == null || videoUrl.isEmpty()) return Result.failure();
             
             try {
                 setForegroundAsync(createForegroundInfo(videoTitle, 0));
                 
                 String filePath;
-                
                 if (isM3u8) {
                     filePath = downloadHLS(videoUrl, videoTitle);
                 } else if (isMpd) {
@@ -185,9 +149,8 @@ public class PureWebDownloader {
                 if (filePath != null && !isCancelled.get()) {
                     showCompletionNotification(videoTitle, filePath);
                     return Result.success();
-                } else {
-                    return Result.failure();
                 }
+                return Result.failure();
                 
             } catch (Exception e) {
                 showErrorNotification(videoTitle, e.getMessage());
@@ -195,13 +158,9 @@ public class PureWebDownloader {
             }
         }
         
-        /**
-         * Download regular video file
-         */
         private String downloadRegular(String url, String title) throws IOException {
             File downloadDir = getDownloadDirectory();
-            String extension = getExtension(url);
-            String fileName = sanitizeFileName(title) + "." + extension;
+            String fileName = sanitizeFileName(title) + "." + getExtension(url);
             File outputFile = new File(downloadDir, fileName);
             
             HttpURLConnection connection = null;
@@ -220,53 +179,34 @@ public class PureWebDownloader {
                 
                 inputStream = connection.getInputStream();
                 outputStream = new FileOutputStream(outputFile);
-                
                 byte[] buffer = new byte[8192];
                 int bytesRead;
                 
                 while ((bytesRead = inputStream.read(buffer)) != -1) {
                     if (isCancelled.get()) {
-                        closeQuietly(inputStream);
-                        closeQuietly(outputStream);
                         outputFile.delete();
                         return null;
                     }
-                    
                     outputStream.write(buffer, 0, bytesRead);
                     downloaded += bytesRead;
-                    
                     if (totalSize > 0) {
-                        int progress = (int) ((downloaded * 100) / totalSize);
-                        updateProgress(title, progress);
+                        updateProgress(title, (int) ((downloaded * 100) / totalSize));
                     }
                 }
-                
                 return outputFile.getAbsolutePath();
-                
             } finally {
                 closeQuietly(inputStream);
                 closeQuietly(outputStream);
-                if (connection != null) {
-                    connection.disconnect();
-                }
+                if (connection != null) connection.disconnect();
             }
         }
         
-        /**
-         * Download HLS stream (M3U8)
-         */
         private String downloadHLS(String m3u8Url, String title) throws IOException {
             File downloadDir = getDownloadDirectory();
-            String fileName = sanitizeFileName(title) + ".ts";
-            File outputFile = new File(downloadDir, fileName);
+            File outputFile = new File(downloadDir, sanitizeFileName(title) + ".ts");
             
-            // Parse M3U8
             List<String> segments = parseM3U8(m3u8Url);
-            
-            if (segments.isEmpty()) {
-                // Try as single file
-                return downloadRegular(m3u8Url, title);
-            }
+            if (segments.isEmpty()) return downloadRegular(m3u8Url, title);
             
             FileOutputStream fos = null;
             try {
@@ -279,39 +219,20 @@ public class PureWebDownloader {
                         outputFile.delete();
                         return null;
                     }
-                    
                     byte[] data = downloadSegment(segments.get(i));
-                    if (data != null) {
-                        fos.write(data);
-                    }
-                    
-                    int progress = (int) ((downloaded.incrementAndGet() * 100.0) / total);
-                    updateProgress(title, progress);
+                    if (data != null) fos.write(data);
+                    updateProgress(title, (int) ((downloaded.incrementAndGet() * 100.0) / total));
                 }
-                
                 return outputFile.getAbsolutePath();
-                
             } finally {
                 closeQuietly(fos);
             }
         }
         
-        /**
-         * Download MPD (DASH) stream
-         */
         private String downloadMPD(String mpdUrl, String title) throws IOException {
-            File downloadDir = getDownloadDirectory();
-            String fileName = sanitizeFileName(title) + ".mp4";
-            File outputFile = new File(downloadDir, fileName);
-            
-            // For simplicity, just download the MPD manifest
-            // Full implementation would parse MPD and download segments
             return downloadRegular(mpdUrl, title + ".mpd");
         }
         
-        /**
-         * Parse M3U8 manifest
-         */
         private List<String> parseM3U8(String url) {
             List<String> segments = new ArrayList<>();
             BufferedReader reader = null;
@@ -320,7 +241,6 @@ public class PureWebDownloader {
                 HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
                 connection.setRequestProperty("User-Agent", "Mozilla/5.0");
                 addCookies(connection, url);
-                
                 reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
                 
                 String baseUrl = url.substring(0, url.lastIndexOf('/') + 1);
@@ -329,48 +249,28 @@ public class PureWebDownloader {
                 
                 while ((line = reader.readLine()) != null) {
                     line = line.trim();
-                    
-                    // Master playlist
                     if (line.startsWith("#EXT-X-STREAM-INF")) {
                         isMasterPlaylist = true;
                         continue;
                     }
-                    
-                    // Get variant stream from master playlist
                     if (isMasterPlaylist && !line.startsWith("#") && !line.isEmpty()) {
-                        String variantUrl = line.startsWith("http") ? 
-                                line : baseUrl + line;
-                        // Recursive call in try block
-                        try {
-                            closeQuietly(reader);
-                            return parseM3U8(variantUrl);
-                        } catch (IOException e) {
-                            // Fall through to return current segments
-                        }
+                        String variantUrl = line.startsWith("http") ? line : baseUrl + line;
+                        closeQuietly(reader);
+                        return parseM3U8(variantUrl);
                     }
-                    
-                    // Regular segment
                     if (!line.startsWith("#") && !line.isEmpty()) {
-                        String segmentUrl = line.startsWith("http") ? 
-                                line : baseUrl + line;
-                        if (!segments.contains(segmentUrl)) {
-                            segments.add(segmentUrl);
-                        }
+                        String segmentUrl = line.startsWith("http") ? line : baseUrl + line;
+                        if (!segments.contains(segmentUrl)) segments.add(segmentUrl);
                     }
                 }
-                
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
                 closeQuietly(reader);
             }
-            
             return segments;
         }
         
-        /**
-         * Download a single segment
-         */
         private byte[] downloadSegment(String url) {
             HttpURLConnection connection = null;
             InputStream is = null;
@@ -386,81 +286,45 @@ public class PureWebDownloader {
                 java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
                 byte[] buffer = new byte[8192];
                 int len;
-                
-                while ((len = is.read(buffer)) > 0) {
-                    baos.write(buffer, 0, len);
-                }
-                
+                while ((len = is.read(buffer)) > 0) baos.write(buffer, 0, len);
                 return baos.toByteArray();
-                
             } catch (Exception e) {
                 return null;
             } finally {
                 closeQuietly(is);
-                if (connection != null) {
-                    connection.disconnect();
-                }
+                if (connection != null) connection.disconnect();
             }
         }
         
-        /**
-         * Close stream quietly (no exceptions)
-         */
         private void closeQuietly(java.io.Closeable closeable) {
             if (closeable != null) {
-                try {
-                    closeable.close();
-                } catch (IOException e) {
-                    // Ignore
-                }
+                try { closeable.close(); } catch (IOException ignored) {}
             }
         }
         
-        /**
-         * Add default headers
-         */
         private void addDefaultHeaders(HttpURLConnection connection, String url) {
-            connection.setRequestProperty("User-Agent", 
-                    "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36");
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36");
             addCookies(connection, url);
         }
         
-        /**
-         * Add cookies
-         */
         private void addCookies(HttpURLConnection connection, String url) {
             try {
                 String cookies = CookieManager.getInstance().getCookie(url);
-                if (cookies != null && !cookies.isEmpty()) {
-                    connection.setRequestProperty("Cookie", cookies);
-                }
-            } catch (Exception e) {
-                // Ignore
-            }
+                if (cookies != null && !cookies.isEmpty()) connection.setRequestProperty("Cookie", cookies);
+            } catch (Exception ignored) {}
         }
         
-        /**
-         * Get download directory
-         */
         private File getDownloadDirectory() {
             File dir = new File(getApplicationContext().getExternalFilesDir(null), "Downloads");
-            if (!dir.exists()) {
-                dir.mkdirs();
-            }
+            if (!dir.exists()) dir.mkdirs();
             return dir;
         }
         
-        /**
-         * Sanitize file name
-         */
         private String sanitizeFileName(String name) {
             if (name == null) return "video";
             return name.replaceAll("[^a-zA-Z0-9._-]", "_").substring(0, Math.min(name.length(), 50));
         }
         
-        /**
-         * Get extension from URL
-         */
         private String getExtension(String url) {
             if (url.contains(".m3u8")) return "m3u8";
             if (url.contains(".mpd")) return "mpd";
@@ -473,28 +337,16 @@ public class PureWebDownloader {
             return "mp4";
         }
         
-        /**
-         * Create foreground info
-         */
         private androidx.work.ForegroundInfo createForegroundInfo(String title, int progress) {
-            android.app.Notification notification = createNotification(title, progress);
-            return new androidx.work.ForegroundInfo(NOTIFICATION_ID, notification);
+            return new androidx.work.ForegroundInfo(NOTIFICATION_ID, createNotification(title, progress));
         }
         
-        /**
-         * Create notification
-         */
         private android.app.Notification createNotification(String title, int progress) {
             createNotificationChannel();
-            
             Intent intent = getApplicationContext().getPackageManager()
                     .getLaunchIntentForPackage(getApplicationContext().getPackageName());
-            
             android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(
-                    getApplicationContext(), 0, intent,
-                    android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE
-            );
-            
+                    getApplicationContext(), 0, intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
             return new androidx.core.app.NotificationCompat.Builder(getApplicationContext(), CHANNEL_ID)
                     .setSmallIcon(android.R.drawable.stat_sys_download)
                     .setContentTitle("Downloading: " + title)
@@ -505,77 +357,50 @@ public class PureWebDownloader {
                     .build();
         }
         
-        /**
-         * Create notification channel
-         */
         private void createNotificationChannel() {
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                android.app.NotificationManager manager = (android.app.NotificationManager) getApplicationContext()
+                        .getSystemService(android.content.Context.NOTIFICATION_SERVICE);
                 android.app.NotificationChannel channel = new android.app.NotificationChannel(
                         CHANNEL_ID, "Downloads", android.app.NotificationManager.IMPORTANCE_LOW);
                 channel.setDescription("Download progress notifications");
-                
-                android.app.NotificationManager manager = 
-                        (android.app.NotificationManager) getApplicationContext()
-                                .getSystemService(android.content.Context.NOTIFICATION_SERVICE);
                 manager.createNotificationChannel(channel);
             }
         }
         
-        /**
-         * Update progress notification
-         */
         private void updateProgress(String title, int progress) {
-            android.app.NotificationManager manager = 
-                    (android.app.NotificationManager) getApplicationContext()
-                            .getSystemService(android.content.Context.NOTIFICATION_SERVICE);
+            android.app.NotificationManager manager = (android.app.NotificationManager) getApplicationContext()
+                    .getSystemService(android.content.Context.NOTIFICATION_SERVICE);
             manager.notify(NOTIFICATION_ID, createNotification(title, progress));
         }
         
-        /**
-         * Show completion notification
-         */
         private void showCompletionNotification(String title, String filePath) {
-            android.app.NotificationManager manager = 
-                    (android.app.NotificationManager) getApplicationContext()
-                            .getSystemService(android.content.Context.NOTIFICATION_SERVICE);
-            
+            android.app.NotificationManager manager = (android.app.NotificationManager) getApplicationContext()
+                    .getSystemService(android.content.Context.NOTIFICATION_SERVICE);
             Intent intent = new Intent(Intent.ACTION_VIEW);
             intent.setDataAndType(Uri.fromFile(new File(filePath)), "video/*");
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            
             android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(
-                    getApplicationContext(), 0, intent,
-                    android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE
-            );
-            
-            android.app.Notification notification = new androidx.core.app.NotificationCompat.Builder(
-                    getApplicationContext(), CHANNEL_ID)
+                    getApplicationContext(), 0, intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
+            android.app.Notification notification = new androidx.core.app.NotificationCompat.Builder(getApplicationContext(), CHANNEL_ID)
                     .setSmallIcon(android.R.drawable.stat_sys_download_done)
                     .setContentTitle("Download Complete")
                     .setContentText(title)
                     .setAutoCancel(true)
                     .setContentIntent(pendingIntent)
                     .build();
-            
             manager.notify(NOTIFICATION_ID + 1, notification);
         }
         
-        /**
-         * Show error notification
-         */
         private void showErrorNotification(String title, String error) {
-            android.app.NotificationManager manager = 
-                    (android.app.NotificationManager) getApplicationContext()
-                            .getSystemService(android.content.Context.NOTIFICATION_SERVICE);
-            
-            android.app.Notification notification = new androidx.core.app.NotificationCompat.Builder(
-                    getApplicationContext(), CHANNEL_ID)
+            android.app.NotificationManager manager = (android.app.NotificationManager) getApplicationContext()
+                    .getSystemService(android.content.Context.NOTIFICATION_SERVICE);
+            android.app.Notification notification = new androidx.core.app.NotificationCompat.Builder(getApplicationContext(), CHANNEL_ID)
                     .setSmallIcon(android.R.drawable.stat_notify_error)
                     .setContentTitle("Download Failed")
                     .setContentText(title + ": " + error)
                     .setAutoCancel(true)
                     .build();
-            
             manager.notify(NOTIFICATION_ID + 2, notification);
         }
         
