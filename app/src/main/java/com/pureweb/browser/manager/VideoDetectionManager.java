@@ -3,12 +3,12 @@ package com.pureweb.browser.manager;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
-import android.webkit.CookieManager;
 
 import com.pureweb.browser.data.VideoFormat;
 import com.pureweb.browser.data.VideoFormats;
 import com.pureweb.browser.data.VideoInfo;
 import com.pureweb.browser.network.HttpClient;
+import com.pureweb.browser.proxy.ProxyController;
 import com.pureweb.browser.repository.VideoRepository;
 
 import java.util.ArrayList;
@@ -22,7 +22,9 @@ import java.util.concurrent.Executors;
 
 /**
  * Video Detection Manager - Coordinates video detection from websites
- * Combines JS injection + URL verification + content parsing
+ * Combines JS injection + Proxy traffic + URL verification + content parsing
+ * 
+ * Similar to super-video-downloader's GlobalVideoDetectionModel
  */
 public class VideoDetectionManager {
 
@@ -30,6 +32,7 @@ public class VideoDetectionManager {
     private Context context;
     private VideoRepository videoRepository;
     private HttpClient httpClient;
+    private ProxyController proxyController;
     private ExecutorService executor;
     private Handler mainHandler;
     
@@ -39,6 +42,11 @@ public class VideoDetectionManager {
     
     // Listeners
     private List<VideoDetectionListener> listeners = new ArrayList<>();
+    
+    // Settings
+    private boolean detectByUrl = true;
+    private boolean checkOnAudio = true;
+    private boolean useProxyDetection = true;
     
     // Minimum video file size (5MB)
     private static final long MIN_VIDEO_SIZE = 5 * 1024 * 1024;
@@ -51,8 +59,23 @@ public class VideoDetectionManager {
         this.context = context.getApplicationContext();
         this.videoRepository = VideoRepository.getInstance(context);
         this.httpClient = HttpClient.getInstance(context);
+        this.proxyController = ProxyController.getInstance(context);
         this.executor = Executors.newCachedThreadPool();
         this.mainHandler = new Handler(Looper.getMainLooper());
+        
+        // Connect to proxy for traffic-based detection
+        proxyController.setVideoDetectionListener(new ProxyController.VideoDetectionFromProxyListener() {
+            @Override
+            public void onVideoDetectedFromProxy(VideoInfo videoInfo) {
+                mainHandler.post(() -> {
+                    if (!verifiedUrls.contains(videoInfo.getFirstUrl())) {
+                        verifiedUrls.add(videoInfo.getFirstUrl());
+                        detectedVideos.put(videoInfo.getFirstUrl(), videoInfo);
+                        notifyVideoDetected(videoInfo);
+                    }
+                });
+            }
+        });
     }
     
     public static synchronized VideoDetectionManager getInstance(Context context) {
@@ -88,6 +111,37 @@ public class VideoDetectionManager {
     }
     
     /**
+     * Start proxy-based detection
+     */
+    public void startProxyDetection() {
+        if (useProxyDetection && !proxyController.isProxyRunning()) {
+            proxyController.startLocalProxy();
+        }
+    }
+    
+    /**
+     * Stop proxy-based detection
+     */
+    public void stopProxyDetection() {
+        proxyController.stopProxy();
+    }
+    
+    /**
+     * Set detection settings
+     */
+    public void setDetectByUrl(boolean detect) {
+        this.detectByUrl = detect;
+    }
+    
+    public void setCheckOnAudio(boolean check) {
+        this.checkOnAudio = check;
+    }
+    
+    public void setUseProxyDetection(boolean use) {
+        this.useProxyDetection = use;
+    }
+    
+    /**
      * Process a detected video URL from JS injection
      */
     public void processDetectedUrl(String url, String type, String title) {
@@ -108,12 +162,29 @@ public class VideoDetectionManager {
     }
     
     /**
+     * Process URL detected from proxy traffic
+     */
+    public void processProxyUrl(String url) {
+        if (url == null || url.isEmpty()) return;
+        if (verifiedUrls.contains(url)) return;
+        if (url.matches(FILTER_REGEX)) return;
+        
+        mainHandler.post(() -> notifyVideoDetecting(url));
+        
+        executor.execute(() -> {
+            if (detectByUrl) {
+                verifyAndProcessUrl(url, null, null);
+            }
+        });
+    }
+    
+    /**
      * Verify URL and process it
      */
     private void verifyAndProcessUrl(String url, String type, String title) {
         try {
             // Check if M3U8 or MPD
-            if (url.contains(".m3u8") || type != null && type.contains("m3u8")) {
+            if (url.contains(".m3u8") || (type != null && type.contains("m3u8"))) {
                 processM3U8Video(url, title);
                 return;
             }
@@ -135,7 +206,13 @@ public class VideoDetectionManager {
                     break;
                 case VIDEO:
                 case AUDIO:
-                    processRegularVideo(url, contentType, title);
+                    if (type == null || type.equals("audio")) {
+                        if (checkOnAudio) {
+                            processRegularVideo(url, contentType, title);
+                        }
+                    } else {
+                        processRegularVideo(url, contentType, title);
+                    }
                     break;
                 case OCTET_STREAM:
                     // Might be video - check content
@@ -231,7 +308,7 @@ public class VideoDetectionManager {
         mainHandler.post(() -> notifyM3U8Detected(url));
         
         // Get full video info from repository
-        VideoInfo videoInfo = videoRepository.getVideoInfo(url, true, false, true);
+        VideoInfo videoInfo = videoRepository.getVideoInfo(url, true, false, checkOnAudio);
         
         if (videoInfo != null && !videoInfo.getDownloadUrls().isEmpty()) {
             detectedVideos.put(url, videoInfo);
@@ -249,7 +326,7 @@ public class VideoDetectionManager {
         
         mainHandler.post(() -> notifyMPDDetected(url));
         
-        VideoInfo videoInfo = videoRepository.getVideoInfo(url, false, true, true);
+        VideoInfo videoInfo = videoRepository.getVideoInfo(url, false, true, checkOnAudio);
         
         if (videoInfo != null && !videoInfo.getDownloadUrls().isEmpty()) {
             detectedVideos.put(url, videoInfo);
@@ -314,6 +391,13 @@ public class VideoDetectionManager {
      */
     public int getDetectedVideosCount() {
         return detectedVideos.size();
+    }
+    
+    /**
+     * Check if proxy is active
+     */
+    public boolean isProxyActive() {
+        return proxyController.isProxyRunning();
     }
     
     /**
