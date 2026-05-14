@@ -3,7 +3,6 @@ package com.pureweb.browser.download;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.webkit.CookieManager;
@@ -18,12 +17,11 @@ import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
 import com.pureweb.browser.data.VideoInfo;
-import com.pureweb.browser.data.VideoFormat;
-import com.pureweb.browser.data.VideoFormats;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -200,14 +198,18 @@ public class PureWebDownloader {
         /**
          * Download regular video file
          */
-        private String downloadRegular(String url, String title) {
+        private String downloadRegular(String url, String title) throws IOException {
             File downloadDir = getDownloadDirectory();
             String extension = getExtension(url);
             String fileName = sanitizeFileName(title) + "." + extension;
             File outputFile = new File(downloadDir, fileName);
             
+            HttpURLConnection connection = null;
+            InputStream inputStream = null;
+            FileOutputStream outputStream = null;
+            
             try {
-                HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+                connection = (HttpURLConnection) new URL(url).openConnection();
                 connection.setRequestMethod("GET");
                 connection.setConnectTimeout(30000);
                 connection.setReadTimeout(30000);
@@ -216,16 +218,16 @@ public class PureWebDownloader {
                 long totalSize = connection.getContentLengthLong();
                 long downloaded = 0;
                 
-                InputStream inputStream = connection.getInputStream();
-                FileOutputStream outputStream = new FileOutputStream(outputFile);
+                inputStream = connection.getInputStream();
+                outputStream = new FileOutputStream(outputFile);
                 
                 byte[] buffer = new byte[8192];
                 int bytesRead;
                 
                 while ((bytesRead = inputStream.read(buffer)) != -1) {
                     if (isCancelled.get()) {
-                        inputStream.close();
-                        outputStream.close();
+                        closeQuietly(inputStream);
+                        closeQuietly(outputStream);
                         outputFile.delete();
                         return null;
                     }
@@ -239,42 +241,41 @@ public class PureWebDownloader {
                     }
                 }
                 
-                inputStream.close();
-                outputStream.flush();
-                outputStream.close();
-                
                 return outputFile.getAbsolutePath();
                 
-            } catch (Exception e) {
-                outputFile.delete();
-                throw e;
+            } finally {
+                closeQuietly(inputStream);
+                closeQuietly(outputStream);
+                if (connection != null) {
+                    connection.disconnect();
+                }
             }
         }
         
         /**
          * Download HLS stream (M3U8)
          */
-        private String downloadHLS(String m3u8Url, String title) {
+        private String downloadHLS(String m3u8Url, String title) throws IOException {
             File downloadDir = getDownloadDirectory();
             String fileName = sanitizeFileName(title) + ".ts";
             File outputFile = new File(downloadDir, fileName);
             
+            // Parse M3U8
+            List<String> segments = parseM3U8(m3u8Url);
+            
+            if (segments.isEmpty()) {
+                // Try as single file
+                return downloadRegular(m3u8Url, title);
+            }
+            
+            FileOutputStream fos = null;
             try {
-                // Parse M3U8
-                List<String> segments = parseM3U8(m3u8Url);
-                
-                if (segments.isEmpty()) {
-                    // Try as single file
-                    return downloadRegular(m3u8Url, title);
-                }
-                
-                FileOutputStream fos = new FileOutputStream(outputFile);
+                fos = new FileOutputStream(outputFile);
                 int total = segments.size();
                 AtomicInteger downloaded = new AtomicInteger(0);
                 
                 for (int i = 0; i < total; i++) {
                     if (isCancelled.get()) {
-                        fos.close();
                         outputFile.delete();
                         return null;
                     }
@@ -288,20 +289,17 @@ public class PureWebDownloader {
                     updateProgress(title, progress);
                 }
                 
-                fos.close();
                 return outputFile.getAbsolutePath();
                 
-            } catch (Exception e) {
-                outputFile.delete();
-                throw e;
+            } finally {
+                closeQuietly(fos);
             }
         }
         
         /**
          * Download MPD (DASH) stream
          */
-        private String downloadMPD(String mpdUrl, String title) {
-            // For MPD, download the init segment and media segments
+        private String downloadMPD(String mpdUrl, String title) throws IOException {
             File downloadDir = getDownloadDirectory();
             String fileName = sanitizeFileName(title) + ".mp4";
             File outputFile = new File(downloadDir, fileName);
@@ -316,14 +314,14 @@ public class PureWebDownloader {
          */
         private List<String> parseM3U8(String url) {
             List<String> segments = new ArrayList<>();
+            BufferedReader reader = null;
             
             try {
                 HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
                 connection.setRequestProperty("User-Agent", "Mozilla/5.0");
                 addCookies(connection, url);
                 
-                BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(connection.getInputStream()));
+                reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
                 
                 String baseUrl = url.substring(0, url.lastIndexOf('/') + 1);
                 String line;
@@ -342,8 +340,13 @@ public class PureWebDownloader {
                     if (isMasterPlaylist && !line.startsWith("#") && !line.isEmpty()) {
                         String variantUrl = line.startsWith("http") ? 
                                 line : baseUrl + line;
-                        reader.close();
-                        return parseM3U8(variantUrl); // Recursive
+                        // Recursive call in try block
+                        try {
+                            closeQuietly(reader);
+                            return parseM3U8(variantUrl);
+                        } catch (IOException e) {
+                            // Fall through to return current segments
+                        }
                     }
                     
                     // Regular segment
@@ -356,10 +359,10 @@ public class PureWebDownloader {
                     }
                 }
                 
-                reader.close();
-                
             } catch (Exception e) {
                 e.printStackTrace();
+            } finally {
+                closeQuietly(reader);
             }
             
             return segments;
@@ -369,15 +372,17 @@ public class PureWebDownloader {
          * Download a single segment
          */
         private byte[] downloadSegment(String url) {
+            HttpURLConnection connection = null;
+            InputStream is = null;
             try {
-                HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+                connection = (HttpURLConnection) new URL(url).openConnection();
                 connection.setRequestMethod("GET");
                 connection.setConnectTimeout(10000);
                 connection.setReadTimeout(15000);
                 connection.setRequestProperty("User-Agent", "Mozilla/5.0");
                 addCookies(connection, url);
                 
-                InputStream is = connection.getInputStream();
+                is = connection.getInputStream();
                 java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
                 byte[] buffer = new byte[8192];
                 int len;
@@ -386,11 +391,28 @@ public class PureWebDownloader {
                     baos.write(buffer, 0, len);
                 }
                 
-                is.close();
                 return baos.toByteArray();
                 
             } catch (Exception e) {
                 return null;
+            } finally {
+                closeQuietly(is);
+                if (connection != null) {
+                    connection.disconnect();
+                }
+            }
+        }
+        
+        /**
+         * Close stream quietly (no exceptions)
+         */
+        private void closeQuietly(java.io.Closeable closeable) {
+            if (closeable != null) {
+                try {
+                    closeable.close();
+                } catch (IOException e) {
+                    // Ignore
+                }
             }
         }
         
