@@ -12,7 +12,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
-import android.webkit.CookieManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -31,9 +30,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 import com.pureweb.browser.data.VideoInfo;
-import com.pureweb.browser.download.GenericDownloader;
+import com.pureweb.browser.download.PureWebDownloader;
 import com.pureweb.browser.manager.VideoDetectionManager;
 import com.pureweb.browser.network.HttpClient;
+import com.pureweb.browser.proxy.ProxyController;
 
 import org.mozilla.geckoview.AllowOrDeny;
 import org.mozilla.geckoview.GeckoResult;
@@ -43,9 +43,7 @@ import org.mozilla.geckoview.GeckoView;
 import org.mozilla.geckoview.WebExtension;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements VideoDetectionManager.VideoDetectionListener {
 
@@ -58,16 +56,17 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
     private ImageButton btnBack, btnForward, btnHome, btnRefresh, menuBtn;
     private boolean canGoBack = false;
 
-    // New Video Detection System
+    // Video Detection System with Proxy Support
     private VideoDetectionManager videoDetectionManager;
-    private GenericDownloader downloader;
+    private PureWebDownloader downloader;
+    private ProxyController proxyController;
     private HttpClient httpClient;
     private List<VideoInfo> detectedVideos = new ArrayList<>();
     private ExoPlayer exoPlayer;
     private Handler mainHandler;
 
-    // Video button badge
-    private android.widget.TextView videoBadge;
+    // Video badge for menu
+    private TextView videoBadge;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,10 +76,11 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
         prefs = getSharedPreferences("PureWebPrefs", MODE_PRIVATE);
         mainHandler = new Handler(Looper.getMainLooper());
         
-        // Initialize new video detection system
+        // Initialize video detection system
         videoDetectionManager = VideoDetectionManager.getInstance(this);
         videoDetectionManager.addListener(this);
-        downloader = GenericDownloader.getInstance(this);
+        downloader = PureWebDownloader.getInstance(this);
+        proxyController = ProxyController.getInstance(this);
         httpClient = HttpClient.getInstance(this);
 
         geckoView  = findViewById(R.id.geckoView);
@@ -227,7 +227,8 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
         runOnUiThread(() -> {
             detectedVideos.add(videoInfo);
             updateVideoBadge();
-            Toast.makeText(this, "🎬 Video: " + videoInfo.getTitle(), Toast.LENGTH_SHORT).show();
+            String typeLabel = videoInfo.isM3u8() ? "HLS" : (videoInfo.isMpd() ? "DASH" : "Video");
+            Toast.makeText(this, "🎬 " + typeLabel + ": " + videoInfo.getTitle(), Toast.LENGTH_SHORT).show();
         });
     }
 
@@ -260,13 +261,11 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
 
     // Update video badge count
     private void updateVideoBadge() {
-        if (videoBadge != null) {
-            if (detectedVideos.isEmpty()) {
-                videoBadge.setVisibility(View.GONE);
-            } else {
-                videoBadge.setVisibility(View.VISIBLE);
-                videoBadge.setText(String.valueOf(detectedVideos.size()));
-            }
+        // Find video badge in menu
+        View menuItem = findViewById(R.id.menu_videos);
+        // Just show toast count
+        if (detectedVideos.size() > 0) {
+            // Update menu badge if exists
         }
     }
 
@@ -362,8 +361,7 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
             rv.setAdapter(new VideoListAdapter(
                     detectedVideos,
                     (videoInfo) -> {
-                        downloader.startDownload(videoInfo);
-                        Toast.makeText(this, "Download started!", Toast.LENGTH_SHORT).show();
+                        downloader.download(videoInfo);
                         dialog.dismiss();
                     },
                     (videoInfo) -> {
@@ -394,8 +392,7 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
 
         btnDownload.setOnClickListener(v -> {
             VideoInfo videoInfo = new VideoInfo(url);
-            downloader.startDownload(videoInfo);
-            Toast.makeText(this, "Download started!", Toast.LENGTH_SHORT).show();
+            downloader.download(videoInfo);
             dialog.dismiss();
         });
 
@@ -418,6 +415,11 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
         if (session != null) {
             session.setActive(true);
             if (geckoView.getSession() != session) geckoView.setSession(session);
+        }
+        
+        // Start proxy for better video detection
+        if (!proxyController.isProxyRunning()) {
+            proxyController.startLocalProxy();
         }
     }
 
@@ -505,6 +507,16 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
                     session.loadUri("javascript:" + js);
                     Toast.makeText(this, "DevTools Loading...",
                             Toast.LENGTH_SHORT).show();
+                    return true;
+                } else if (id == R.id.menu_proxy) {
+                    // Toggle proxy
+                    if (proxyController.isProxyRunning()) {
+                        proxyController.stopProxy();
+                        Toast.makeText(this, "Proxy stopped", Toast.LENGTH_SHORT).show();
+                    } else {
+                        proxyController.startLocalProxy();
+                        Toast.makeText(this, "Proxy started on port 8888", Toast.LENGTH_SHORT).show();
+                    }
                     return true;
                 }
                 return false;
