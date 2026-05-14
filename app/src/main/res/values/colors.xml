@@ -9,10 +9,16 @@
     <color name="white">#FFFFFFFF</color>
     
     <!-- PureWeb Theme Colors -->
-    <color name="pureweb_primary">#4CAF50</color>
-    <color name="pureweb_primary_dark">#388E3C</color>
+    <color name="pureweb_primary">#1565C0</color>
+    <color name="pureweb_primary_dark">#0D47A1</color>
 
-    <!-- Missing Colors (এগুলো যোগ করা হলো) -->
+    <!-- Missing Colors -->
     <color name="url_bar_bg">#FFFFFF</color>
     <color name="light_gray">#F5F5F5</color>
+    
+    <!-- Logo Gradient Colors -->
+    <color name="logo_blue_dark">#0D47A1</color>
+    <color name="logo_blue_mid">#1565C0</color>
+    <color name="logo_blue_light">#1E88E5</color>
+    <color name="logo_grid_blue">#64B5F6</color>
 </resources>
