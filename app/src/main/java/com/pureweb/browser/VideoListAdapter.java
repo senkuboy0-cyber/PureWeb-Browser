@@ -3,7 +3,7 @@ package com.pureweb.browser;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -56,20 +56,18 @@ public class VideoListAdapter extends RecyclerView.Adapter<VideoListAdapter.Vide
     class VideoViewHolder extends RecyclerView.ViewHolder {
         
         private TextView tvTitle;
-        private TextView tvFormat;
-        private TextView tvUrl;
-        private ImageView ivType;
-        private ImageButton btnDownload;
-        private ImageButton btnPlay;
+        private TextView tvType;
+        private Button btnPreview;
+        private Button btnDownload;
+        private ImageView ivIcon;
 
         VideoViewHolder(@NonNull View itemView) {
             super(itemView);
             tvTitle = itemView.findViewById(R.id.tvVideoTitle);
-            tvFormat = itemView.findViewById(R.id.tvVideoFormat);
-            tvUrl = itemView.findViewById(R.id.tvVideoUrl);
-            ivType = itemView.findViewById(R.id.ivVideoType);
+            tvType = itemView.findViewById(R.id.tvVideoType);
+            btnPreview = itemView.findViewById(R.id.btnPreview);
             btnDownload = itemView.findViewById(R.id.btnDownload);
-            btnPlay = itemView.findViewById(R.id.btnPlay);
+            ivIcon = itemView.findViewById(R.id.ivVideoType);
         }
 
         void bind(VideoInfo video) {
@@ -77,27 +75,34 @@ public class VideoListAdapter extends RecyclerView.Adapter<VideoListAdapter.Vide
             String title = video.getTitle();
             tvTitle.setText(title != null && !title.isEmpty() ? title : "Video");
             
-            // Format badge
-            String formatText = video.isM3u8() ? "HLS" : (video.isMpd() ? "DASH" : video.getExt().toUpperCase());
-            tvFormat.setText(formatText);
+            // Format/Type badge
+            String typeText;
+            int bgColor;
             
-            // URL (truncated)
-            String url = video.getFirstUrl();
-            if (url.length() > 50) {
-                url = url.substring(0, 47) + "...";
-            }
-            tvUrl.setText(url);
-            
-            // Type icon
             if (video.isM3u8()) {
-                ivType.setImageResource(android.R.drawable.ic_menu_slideshow);
-                ivType.setColorFilter(0xFF4CAF50);
+                typeText = "HLS Stream";
+                bgColor = 0xFF4CAF50;
             } else if (video.isMpd()) {
-                ivType.setImageResource(android.R.drawable.ic_menu_slideshow);
-                ivType.setColorFilter(0xFFFF9800);
+                typeText = "DASH Stream";
+                bgColor = 0xFFFF9800;
+            } else if (video.isRegularDownload()) {
+                typeText = video.getExt() != null ? video.getExt().toUpperCase() : "MP4";
+                bgColor = 0xFF2196F3;
             } else {
-                ivType.setImageResource(android.R.drawable.ic_media_play);
-                ivType.setColorFilter(0xFF2196F3);
+                typeText = video.getExt() != null ? video.getExt().toUpperCase() : "VIDEO";
+                bgColor = 0xFF9C27B0;
+            }
+            
+            tvType.setText(typeText);
+            tvType.setBackgroundColor(bgColor);
+            
+            // Icon based on type
+            if (video.isM3u8()) {
+                ivIcon.setText("📺");
+            } else if (video.isMpd()) {
+                ivIcon.setText("🎞️");
+            } else {
+                ivIcon.setText("📹");
             }
             
             // Download button
@@ -107,17 +112,10 @@ public class VideoListAdapter extends RecyclerView.Adapter<VideoListAdapter.Vide
                 }
             });
             
-            // Play button
-            btnPlay.setOnClickListener(v -> {
+            // Preview button
+            btnPreview.setOnClickListener(v -> {
                 if (playListener != null) {
                     playListener.onClick(video);
-                }
-            });
-            
-            // Item click - open download
-            itemView.setOnClickListener(v -> {
-                if (downloadListener != null) {
-                    downloadListener.onClick(video);
                 }
             });
         }
