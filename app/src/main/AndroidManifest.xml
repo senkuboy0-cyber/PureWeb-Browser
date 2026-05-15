@@ -9,25 +9,50 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.PureWeb"
         tools:targetApi="31">
-        
+
+        <!-- Settings -->
         <activity
             android:name=".SettingsActivity"
             android:exported="false"
             android:label="Settings"
             android:parentActivityName=".MainActivity" />
-            
+
+        <!-- Extensions -->
         <activity
             android:name=".ExtensionsActivity"
             android:exported="false"
             android:label="Extensions"
             android:parentActivityName=".SettingsActivity" />
-            
+
+        <!-- Extension Detail -->
         <activity
             android:name=".ExtensionDetailActivity"
             android:exported="false"
             android:label="Extension Details"
             android:parentActivityName=".ExtensionsActivity" />
-            
+
+        <!-- 🆕 History -->
+        <activity
+            android:name=".HistoryActivity"
+            android:exported="false"
+            android:label="History"
+            android:parentActivityName=".MainActivity" />
+
+        <!-- 🆕 Bookmarks -->
+        <activity
+            android:name=".BookmarksActivity"
+            android:exported="false"
+            android:label="Bookmarks"
+            android:parentActivityName=".MainActivity" />
+
+        <!-- 🆕 Downloads -->
+        <activity
+            android:name=".DownloadsActivity"
+            android:exported="false"
+            android:label="Downloads"
+            android:parentActivityName=".MainActivity" />
+
+        <!-- Main -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
