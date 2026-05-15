@@ -10,8 +10,8 @@
     <!-- Browser UI -->
     <string name="menu_bookmarks">Bookmarks</string>
     <string name="menu_history">History</string>
-    <string name="menu_settings">Settings</string>
     <string name="menu_downloads">Downloads</string>
+    <string name="menu_settings">Settings</string>
     <string name="menu_refresh">Refresh</string>
     <string name="menu_share">Share</string>
     <string name="menu_find">Find in Page</string>
@@ -45,7 +45,37 @@
     <string name="dialog_cancel">Cancel</string>
     <string name="dialog_add">Add Extension</string>
     <string name="dialog_installing">Installing…</string>
-    <string name="dialog_no_permissions">No special permissions required</string>
+
+    <!-- History -->
+    <string name="history_title">History</string>
+    <string name="history_clear">Clear</string>
+    <string name="history_empty_title">No history yet</string>
+    <string name="history_empty_desc">Your browsing history will appear here</string>
+    <string name="history_clear_title">Clear History?</string>
+    <string name="history_clear_msg">This will remove all browsing history.</string>
+    <string name="history_cleared">History cleared</string>
+    <string name="history_deleted">Deleted</string>
+
+    <!-- Bookmarks -->
+    <string name="bookmarks_title">Bookmarks</string>
+    <string name="bookmarks_add">Add</string>
+    <string name="bookmarks_empty_title">No bookmarks yet</string>
+    <string name="bookmarks_empty_desc">Tap + to add your first bookmark</string>
+    <string name="bookmarks_add_dialog_title">Add Bookmark</string>
+    <string name="bookmarks_edit_dialog_title">Edit Bookmark</string>
+    <string name="bookmarks_save">Save</string>
+    <string name="bookmarks_added">Bookmark added!</string>
+    <string name="bookmarks_updated">Updated!</string>
+    <string name="bookmarks_deleted">Deleted</string>
+
+    <!-- Downloads -->
+    <string name="downloads_title">Downloads</string>
+    <string name="downloads_clear">Clear</string>
+    <string name="downloads_empty_title">No downloads yet</string>
+    <string name="downloads_empty_desc">Downloaded files will appear here</string>
+    <string name="downloads_clear_title">Clear Downloads?</string>
+    <string name="downloads_clear_msg">This will remove all download records.</string>
+    <string name="downloads_cleared">Downloads cleared</string>
 
     <!-- Video -->
     <string name="video_detected">Detected Videos</string>
@@ -59,7 +89,6 @@
     <string name="extensions_search">Search extensions…</string>
     <string name="extensions_add">Add</string>
     <string name="extensions_installed">Installed ✓</string>
-    <string name="extensions_install_failed">Installation failed</string>
     <string name="extensions_about">About this extension</string>
     <string name="extensions_permissions">Permissions</string>
 
