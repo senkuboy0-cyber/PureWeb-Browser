@@ -49,7 +49,6 @@ public class BookmarksActivity extends AppCompatActivity {
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         loadBookmarks();
-
         btnAdd.setOnClickListener(v -> showAddDialog());
     }
 
@@ -109,16 +108,10 @@ public class BookmarksActivity extends AppCompatActivity {
         layout.addView(titleInput);
 
         final EditText urlInput = new EditText(this);
-        urlInput.setHint("URL");
+        urlInput.setHint("URL (required)");
         urlInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
         urlInput.setPadding(8, 8, 8, 8);
         layout.addView(urlInput);
-
-        // Pre-fill from current URL if available
-        if (MainActivity.session != null) {
-            String currentUrl = urlBar != null ? urlBar.getText().toString() : "";
-            if (!currentUrl.isEmpty()) urlInput.setText(currentUrl);
-        }
 
         builder.setView(layout);
         builder.setPositiveButton("Save", (dialog, which) -> {
@@ -131,51 +124,44 @@ public class BookmarksActivity extends AppCompatActivity {
                 adapter.notifyItemInserted(bookmarkList.size() - 1);
                 toggleEmptyState();
                 Toast.makeText(this, "⭐ Bookmark added!", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "URL is required", Toast.LENGTH_SHORT).show();
             }
         });
         builder.setNegativeButton("Cancel", null);
         builder.show();
     }
 
-    // Static utility to add from browser
     public static void addBookmark(Context context, String title, String url) {
         SharedPreferences prefs = context.getSharedPreferences("PureWebBookmarks", MODE_PRIVATE);
         try {
             String json = prefs.getString("bookmarks", "[]");
             JSONArray arr = new JSONArray(json);
-
             for (int i = 0; i < arr.length(); i++) {
                 if (arr.getJSONObject(i).optString("url").equals(url)) {
                     Toast.makeText(context, "Already bookmarked!", Toast.LENGTH_SHORT).show();
                     return;
                 }
             }
-
             JSONObject obj = new JSONObject();
             obj.put("title", title);
             obj.put("url", url);
             arr.put(obj);
-
             if (arr.length() > 500) {
                 JSONArray trimmed = new JSONArray();
                 for (int i = arr.length() - 500; i < arr.length(); i++)
                     trimmed.put(arr.getJSONObject(i));
                 arr = trimmed;
             }
-
             prefs.edit().putString("bookmarks", arr.toString()).apply();
             Toast.makeText(context, "⭐ Bookmarked!", Toast.LENGTH_SHORT).show();
         } catch (Exception e) { e.printStackTrace(); }
     }
 
-    // ─── Model ────────────────────────────────────────────────────────────
-
     public static class BookmarkItem {
         String title, url;
         BookmarkItem(String title, String url) { this.title = title; this.url = url; }
     }
-
-    // ─── Adapter ──────────────────────────────────────────────────────────
 
     class BookmarkAdapter extends RecyclerView.Adapter<BookmarkAdapter.ViewHolder> {
         private List<BookmarkItem> items;
