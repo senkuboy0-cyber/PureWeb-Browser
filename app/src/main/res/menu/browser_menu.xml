@@ -1,12 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="@+id/menu_bookmark" android:title="Bookmarks"/>
-    <item android:id="@+id/menu_history" android:title="History"/>
-    <item android:id="@+id/menu_refresh" android:title="Refresh"/>
-    <item android:id="@+id/menu_share" android:title="Share Link"/>
-    <item android:id="@+id/menu_videos" android:title="🎬 Videos"/>
-    <item android:id="@+id/menu_active_extensions" android:title="Active Extensions"/>
-    <item android:id="@+id/menu_devtools" android:title="DevTools"/>
-    <item android:id="@+id/menu_proxy" android:title="Toggle Proxy"/>
-    <item android:id="@+id/menu_settings" android:title="Settings"/>
+
+    <!-- 📑 Navigation -->
+    <item android:id="@+id/menu_history"
+        android:title="📜 History"
+        android:icon="@android:drawable/ic_menu_recent_history" />
+
+    <item android:id="@+id/menu_bookmark"
+        android:title="⭐ Bookmarks"
+        android:icon="@android:drawable/ic_menu_myplaces" />
+
+    <!-- 🔧 Tools -->
+    <item android:id="@+id/menu_refresh"
+        android:title="🔄 Refresh"
+        android:icon="@android:drawable/ic_menu_rotate" />
+
+    <item android:id="@+id/menu_share"
+        android:title="📤 Share"
+        android:icon="@android:drawable/ic_menu_share" />
+
+    <item android:id="@+id/menu_find_in_page"
+        android:title="🔍 Find in Page"
+        android:icon="@android:drawable/ic_menu_search" />
+
+    <!-- 🎬 Media -->
+    <item android:id="@+id/menu_videos"
+        android:title="🎬 Detected Videos"
+        android:icon="@android:drawable/ic_menu_gallery" />
+
+    <!-- 🧩 Extensions -->
+    <item android:id="@+id/menu_active_extensions"
+        android:title="🧩 Active Extensions"
+        android:icon="@android:drawable/ic_menu_manage" />
+
+    <!-- 🛠️ Advanced -->
+    <item android:id="@+id/menu_devtools"
+        android:title="🛠️ DevTools"
+        android:icon="@android:drawable/ic_menu_edit" />
+
+    <item android:id="@+id/menu_proxy"
+        android:title="🌐 Proxy Settings"
+        android:icon="@android:drawable/ic_menu_gallery" />
+
+    <item android:id="@+id/menu_desktop_mode"
+        android:title="💻 Desktop Mode"
+        android:checkable="true" />
+
+    <!-- Divider (auto in PopupMenu) -->
+
+    <item android:id="@+id/menu_settings"
+        android:title="⚙️ Settings"
+        android:icon="@android:drawable/ic_menu_preferences" />
+
 </menu>
