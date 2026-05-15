@@ -310,7 +310,6 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
         pv.setPlayer(exoPlayer);
         exoPlayer.setMediaItem(MediaItem.fromUri(url));
         exoPlayer.prepare(); exoPlayer.play();
-        // Fix: use downloader instance instead of new PureWebDownloader(this)
         bd.setOnClickListener(ev -> { downloader.download(new VideoInfo(url)); d.dismiss(); });
         d.setOnDismissListener(ev -> { if (exoPlayer != null) { exoPlayer.release(); exoPlayer = null; } });
         d.setContentView(v); d.show();
@@ -378,10 +377,14 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
 
         countText.setText(String.valueOf(tabManager.getTabCount()));
 
-        TabSwitcherAdapter adapter = new TabSwitcherAdapter(tabManager.getTabs(),
+        // Fix: declare adapter as final array to use in lambda
+        final TabSwitcherAdapter[] adapterRef = new TabSwitcherAdapter[1];
+        adapterRef[0] = new TabSwitcherAdapter(tabManager.getTabs(),
                 tabManager.getCurrentIndex(),
                 index -> { tabManager.switchToTab(index); dialog.dismiss(); setupSessionDelegates(tabManager.getCurrentTab().session); },
-                index -> { tabManager.closeTab(index); adapter.notifyDataSetChanged(); countText.setText(String.valueOf(tabManager.getTabCount())); });
+                index -> { tabManager.closeTab(index); adapterRef[0].notifyDataSetChanged(); countText.setText(String.valueOf(tabManager.getTabCount())); });
+
+        TabSwitcherAdapter adapter = adapterRef[0];
 
         rv.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
         rv.setAdapter(adapter);
@@ -405,7 +408,7 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
             @Override public void onCanGoBack(GeckoSession s, boolean cgb) {
                 canGoBack = cgb; btnBack.setAlpha(canGoBack ? 1.0f : 0.4f);
             }
-            // onLocationChange might be deprecated in some versions, removing @Override
+            @SuppressWarnings("deprecation")
             public void onLocationChange(GeckoSession s, String url) {
                 runOnUiThread(() -> {
                     urlBar.setText(url); updateSecurityIcon(url);
