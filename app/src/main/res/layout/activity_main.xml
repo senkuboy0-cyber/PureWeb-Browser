@@ -21,6 +21,7 @@
 
         <Space android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" />
 
+        <!-- Logo Section -->
         <LinearLayout
             android:id="@+id/logoSection"
             android:layout_width="wrap_content"
@@ -45,6 +46,7 @@
 
         <Space android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" />
 
+        <!-- Home Search Card -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/homeSearchCard"
             android:layout_width="match_parent" android:layout_height="56dp"
@@ -53,7 +55,6 @@
             app:cardBackgroundColor="?android:colorBackground"
             android:clickable="true" android:focusable="true"
             android:foreground="?attr/selectableItemBackground">
-
             <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent"
                 android:orientation="horizontal" android:gravity="center_vertical"
                 android:paddingHorizontal="20dp">
@@ -100,8 +101,7 @@
             android:layout_width="match_parent" android:layout_height="wrap_content"
             android:layout_marginHorizontal="4dp" android:layout_marginTop="4dp"
             app:cardCornerRadius="16dp" app:cardElevation="6dp" app:strokeWidth="0dp"
-            app:cardBackgroundColor="?android:colorBackground" android:animateLayoutChanges="true">
-
+            app:cardBackgroundColor="?android:colorBackground">
             <LinearLayout android:layout_width="match_parent" android:layout_height="56dp"
                 android:orientation="vertical">
                 <ProgressBar android:id="@+id/progressBar"
@@ -126,7 +126,8 @@
                     <ImageButton android:id="@+id/menuBtn"
                         android:layout_width="38dp" android:layout_height="38dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        android:src="@drawable/ic_menu" android:tint="?android:textColorSecondary" />
+                        android:src="@drawable/ic_menu"
+                        android:tint="?android:textColorSecondary" />
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -166,8 +167,7 @@
 
                 <!-- ◀ Back -->
                 <FrameLayout android:id="@+id/btnBack"
-                    android:layout_width="0dp" android:layout_height="match_parent"
-                    android:layout_weight="1"
+                    android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:clickable="true" android:focusable="true">
                     <TextView android:layout_width="match_parent" android:layout_height="match_parent"
@@ -176,45 +176,47 @@
 
                 <!-- ▶ Forward -->
                 <FrameLayout android:id="@+id/btnForward"
-                    android:layout_width="0dp" android:layout_height="match_parent"
-                    android:layout_weight="1"
+                    android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:clickable="true" android:focusable="true">
                     <TextView android:layout_width="match_parent" android:layout_height="match_parent"
                         android:gravity="center" android:text="▶" android:textSize="20sp" android:alpha="0.7" />
                 </FrameLayout>
 
-                <!-- 🏠 Home -->
+                <!-- 🏠 Home Button (Fixed!) -->
                 <FrameLayout android:id="@+id/btnHome"
-                    android:layout_width="0dp" android:layout_height="match_parent"
-                    android:layout_weight="1.2"
+                    android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1.2"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:clickable="true" android:focusable="true">
-                    <LinearLayout
+
+                    <com.google.android.material.button.MaterialButton
                         android:layout_width="44dp" android:layout_height="44dp"
-                        android:layout_gravity="center" android:gravity="center"
-                        android:orientation="vertical"
-                        android:background="?colorPrimary" android:elevation="4dp"
-                        app:cornerRadius="22dp" style="@style/Widget.Material3.Button">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="🏠" android:textSize="16sp" />
-                    </LinearLayout>
+                        android:layout_gravity="center"
+                        android:text="🏠"
+                        android:textSize="16sp"
+                        app:cornerRadius="22dp"
+                        style="@style/Widget.Material3.Button"
+                        app:iconSize="0dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:enabled="false"
+                        android:clickable="false"
+                        android:focusable="false" />
+
                 </FrameLayout>
 
                 <!-- 🔄 Refresh -->
                 <FrameLayout android:id="@+id/btnRefresh"
-                    android:layout_width="0dp" android:layout_height="match_parent"
-                    android:layout_weight="1"
+                    android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:clickable="true" android:focusable="true">
                     <TextView android:layout_width="match_parent" android:layout_height="match_parent"
                         android:gravity="center" android:text="🔄" android:textSize="20sp" android:alpha="0.7" />
                 </FrameLayout>
 
-                <!-- 🔀 Tabs (NEW - replaced bookmarks) -->
+                <!-- 🔀 Tabs -->
                 <FrameLayout android:id="@+id/btnTabs"
-                    android:layout_width="0dp" android:layout_height="match_parent"
-                    android:layout_weight="1"
+                    android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:clickable="true" android:focusable="true">
                     <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent"
