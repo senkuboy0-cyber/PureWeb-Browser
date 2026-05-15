@@ -10,6 +10,10 @@
         android:title="⭐ Bookmarks"
         android:icon="@android:drawable/ic_menu_myplaces" />
 
+    <item android:id="@+id/menu_downloads"
+        android:title="📥 Downloads"
+        android:icon="@android:drawable/ic_menu_save" />
+
     <!-- 🔧 Tools -->
     <item android:id="@+id/menu_refresh"
         android:title="🔄 Refresh"
@@ -45,8 +49,6 @@
     <item android:id="@+id/menu_desktop_mode"
         android:title="💻 Desktop Mode"
         android:checkable="true" />
-
-    <!-- Divider (auto in PopupMenu) -->
 
     <item android:id="@+id/menu_settings"
         android:title="⚙️ Settings"
