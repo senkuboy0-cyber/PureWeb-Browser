@@ -64,7 +64,7 @@ public class ExtensionsActivity extends AppCompatActivity {
         adapter = new ExtensionListAdapter();
         recyclerView.setAdapter(adapter);
 
-        // Search functionality
+        // Search
         searchInput.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
@@ -160,8 +160,7 @@ public class ExtensionsActivity extends AppCompatActivity {
                 e.printStackTrace();
                 runOnUiThread(() -> {
                     Toast.makeText(ExtensionsActivity.this,
-                            "Error loading extensions: " + e.getMessage(),
-                            Toast.LENGTH_LONG).show();
+                            "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 });
             }
         }).start();
@@ -213,7 +212,7 @@ public class ExtensionsActivity extends AppCompatActivity {
             holder.rating.setText("★ " + String.format("%.1f", item.rating));
             holder.users.setText("• " + formatUsers(item.users));
 
-            // Load icon using Glide, fallback to emoji
+            // Load icon
             if (item.iconUrl != null && !item.iconUrl.isEmpty()) {
                 try {
                     Glide.with(ExtensionsActivity.this)
@@ -226,7 +225,7 @@ public class ExtensionsActivity extends AppCompatActivity {
                 }
             }
 
-            // Animate entrance with stagger
+            // Stagger entrance animation
             holder.itemView.setAlpha(0f);
             holder.itemView.setTranslationY(30f);
             holder.itemView.animate()
@@ -236,7 +235,7 @@ public class ExtensionsActivity extends AppCompatActivity {
                     .setInterpolator(new DecelerateInterpolator())
                     .start();
 
-            // Click → Detail Activity
+            // Click → Detail
             holder.itemView.setOnClickListener(v -> {
                 Intent intent = new Intent(ExtensionsActivity.this, ExtensionDetailActivity.class);
                 intent.putExtra("EXTENSION_DATA", item);
@@ -245,10 +244,7 @@ public class ExtensionsActivity extends AppCompatActivity {
             });
 
             // Install Button
-            holder.btnAction.setText("Add");
-            holder.btnAction.setOnClickListener(v -> {
-                startModernInstall(item, holder.btnAction);
-            });
+            holder.btnAction.setOnClickListener(v -> startInstall(item, holder.btnAction));
         }
 
         private String formatUsers(long count) {
@@ -257,27 +253,17 @@ public class ExtensionsActivity extends AppCompatActivity {
             return String.valueOf(count);
         }
 
-        private void startModernInstall(ExtensionItem item, MaterialButton btn) {
-            btn.setText("Installing...");
-            btn.setEnabled(false);
-
-            // Show the modern permission dialog
-            new SettingsActivity().showModernInstallDialog(
-                    item.name,
-                    "addons.mozilla.org",
-                    new String[]{"Access your data for all websites", "Store data locally"},
-                    false
-            );
-
-            // Actually install in background
+        private void startInstall(ExtensionItem item, MaterialButton btn) {
             if (MainActivity.runtime == null) {
                 Toast.makeText(ExtensionsActivity.this, "Runtime not ready",
                         Toast.LENGTH_SHORT).show();
-                btn.setText("Add");
-                btn.setEnabled(true);
                 return;
             }
 
+            btn.setText("Installing...");
+            btn.setEnabled(false);
+
+            // Simple permission prompt
             MainActivity.runtime.getWebExtensionController().setPromptDelegate(
                     new WebExtensionController.PromptDelegate() {
                 @NonNull
@@ -285,8 +271,34 @@ public class ExtensionsActivity extends AppCompatActivity {
                 public GeckoResult<WebExtension.PermissionPromptResponse> onInstallPromptRequest(
                         @NonNull WebExtension extension, @NonNull String[] permissions,
                         @NonNull String[] origins, @NonNull String[] dataCollectionPermissions) {
-                    return GeckoResult.fromValue(
-                            new WebExtension.PermissionPromptResponse(true, true, true));
+
+                    final GeckoResult<WebExtension.PermissionPromptResponse> result =
+                            new GeckoResult<>();
+
+                    String[] permStrings = permissions != null ? permissions : new String[0];
+                    StringBuilder permMsg = new StringBuilder();
+                    for (String p : permStrings) {
+                        permMsg.append("• ").append(p).append("\n");
+                    }
+
+                    runOnUiThread(() -> {
+                        new AlertDialog.Builder(ExtensionsActivity.this)
+                                .setTitle("🧩 Add " + item.name + "?")
+                                .setMessage("This extension needs:\n" + permMsg.toString())
+                                .setPositiveButton("Allow", (dialog, which) ->
+                                        result.complete(new WebExtension.PermissionPromptResponse(
+                                                true, true, true)))
+                                .setNegativeButton("Cancel", (dialog, which) -> {
+                                    result.complete(new WebExtension.PermissionPromptResponse(
+                                            false, false, false));
+                                    runOnUiThread(() -> {
+                                        btn.setText("Add");
+                                        btn.setEnabled(true);
+                                    });
+                                })
+                                .show();
+                    });
+                    return result;
                 }
             });
 
@@ -320,7 +332,6 @@ public class ExtensionsActivity extends AppCompatActivity {
             TextView name, desc, rating, users;
             MaterialButton btnAction;
             ImageView icon;
-            CardView card;
 
             public ViewHolder(@NonNull View itemView) {
                 super(itemView);
@@ -330,7 +341,6 @@ public class ExtensionsActivity extends AppCompatActivity {
                 users = itemView.findViewById(R.id.extension_users);
                 btnAction = itemView.findViewById(R.id.extension_btn_action);
                 icon = itemView.findViewById(R.id.extension_icon);
-                card = itemView.findViewById(R.id.extensionCard);
             }
         }
     }
