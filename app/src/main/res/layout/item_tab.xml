@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="160dp"
+    android:layout_height="190dp"
+    android:layout_margin="6dp"
+    android:foreground="?attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="4dp"
+    app:strokeWidth="0dp"
+    app:cardBackgroundColor="?android:colorBackground">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:animateLayoutChanges="true">
+
+        <!-- Tab Preview Area -->
+        <FrameLayout
+            android:id="@+id/tab_preview"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="?colorSurfaceVariant"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/tab_favicon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🌐"
+                android:textSize="36sp"
+                android:alpha="0.6" />
+
+        </FrameLayout>
+
+        <!-- Tab Info -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="8dp"
+            android:background="?android:colorBackground">
+
+            <TextView
+                android:id="@+id/tab_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="New Tab"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="?android:textColorPrimary"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/tab_url"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="about:blank"
+                android:textSize="9sp"
+                android:textColor="?android:textColorSecondary"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:alpha="0.6"
+                android:layout_marginTop="1dp" />
+
+        </LinearLayout>
+
+        <!-- Close Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCloseTab"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:text="✕"
+            android:textSize="8sp"
+            app:cornerRadius="11dp"
+            app:backgroundTint="?colorErrorContainer"
+            android:layout_gravity="end"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="4dp" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

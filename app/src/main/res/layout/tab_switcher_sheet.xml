@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="?android:colorBackground"
+    android:animateLayoutChanges="true">
+
+    <!-- Handle -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:paddingTop="8dp"
+        android:paddingBottom="4dp">
+        <View
+            android:layout_width="40dp" android:layout_height="4dp"
+            android:background="?android:textColorSecondary"
+            android:alpha="0.3" app:cornerRadius="2dp" />
+    </LinearLayout>
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="16dp">
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="🔀" android:textSize="20sp" />
+
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:layout_marginStart="8dp"
+            android:text="Tabs" android:textSize="18sp"
+            android:textStyle="bold" android:textColor="?android:textColorPrimary" />
+
+        <TextView
+            android:id="@+id/tabCount"
+            android:layout_width="wrap_content" android:layout_height="28dp"
+            android:gravity="center" android:text="0" android:textSize="12sp"
+            android:textColor="?colorOnPrimary" android:background="?colorPrimary"
+            android:paddingHorizontal="10dp" app:cornerRadius="14dp" />
+
+    </LinearLayout>
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent" android:layout_height="1dp"
+        android:background="?android:textColorSecondary" android:alpha="0.12" />
+
+    <!-- Tab List (Horizontal Scrolling) -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/tabRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:overScrollMode="never"
+        android:clipToPadding="false"
+        android:paddingVertical="12dp"
+        android:paddingHorizontal="4dp" />
+
+    <!-- New Tab Button -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnNewTab"
+        style="@style/Widget.Material3.Button"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="20dp"
+        android:text="+ New Tab"
+        android:textSize="14sp"
+        app:cornerRadius="24dp"
+        app:icon="@android:drawable/ic_input_add"
+        app:iconGravity="textStart" />
+
+</LinearLayout>
