@@ -9,6 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -19,7 +20,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.card.MaterialCardView;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -65,9 +65,7 @@ public class BookmarksActivity extends AppCompatActivity {
                         obj.optString("url", "")
                 ));
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        } catch (Exception e) { e.printStackTrace(); }
 
         adapter = new BookmarkAdapter(bookmarkList);
         recyclerView.setAdapter(adapter);
@@ -84,9 +82,7 @@ public class BookmarksActivity extends AppCompatActivity {
                 arr.put(obj);
             }
             prefs.edit().putString("bookmarks", arr.toString()).apply();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        } catch (Exception e) { e.printStackTrace(); }
     }
 
     private void toggleEmptyState() {
@@ -103,36 +99,25 @@ public class BookmarksActivity extends AppCompatActivity {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("⭐ Add Bookmark");
 
-        View view = getLayoutInflater().inflate(android.R.layout.simple_list_item_2, null);
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setPadding(24, 16, 24, 16);
 
         final EditText titleInput = new EditText(this);
         titleInput.setHint("Title");
-        titleInput.setInputType(InputType.TYPE_CLASS_TEXT);
         titleInput.setPadding(8, 8, 8, 8);
-        titleInput.setBackgroundTintList(
-                android.content.res.ColorStateList.valueOf(
-                        getResources().getColor(android.R.color.holo_blue_light, getTheme())));
         layout.addView(titleInput);
 
         final EditText urlInput = new EditText(this);
         urlInput.setHint("URL");
         urlInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
         urlInput.setPadding(8, 8, 8, 8);
-        urlInput.setBackgroundTintList(
-                android.content.res.ColorStateList.valueOf(
-                        getResources().getColor(android.R.color.holo_blue_light, getTheme())));
         layout.addView(urlInput);
 
         // Pre-fill from current URL if available
         if (MainActivity.session != null) {
-            String currentUrl = ((android.widget.EditText)
-                    ((android.app.Activity)this).findViewById(R.id.urlBar)).getText().toString();
-            if (!currentUrl.isEmpty()) {
-                urlInput.setText(currentUrl);
-            }
+            String currentUrl = urlBar != null ? urlBar.getText().toString() : "";
+            if (!currentUrl.isEmpty()) urlInput.setText(currentUrl);
         }
 
         builder.setView(layout);
@@ -159,7 +144,6 @@ public class BookmarksActivity extends AppCompatActivity {
             String json = prefs.getString("bookmarks", "[]");
             JSONArray arr = new JSONArray(json);
 
-            // Check duplicate
             for (int i = 0; i < arr.length(); i++) {
                 if (arr.getJSONObject(i).optString("url").equals(url)) {
                     Toast.makeText(context, "Already bookmarked!", Toast.LENGTH_SHORT).show();
@@ -171,39 +155,36 @@ public class BookmarksActivity extends AppCompatActivity {
             obj.put("title", title);
             obj.put("url", url);
             arr.put(obj);
+
+            if (arr.length() > 500) {
+                JSONArray trimmed = new JSONArray();
+                for (int i = arr.length() - 500; i < arr.length(); i++)
+                    trimmed.put(arr.getJSONObject(i));
+                arr = trimmed;
+            }
+
             prefs.edit().putString("bookmarks", arr.toString()).apply();
             Toast.makeText(context, "⭐ Bookmarked!", Toast.LENGTH_SHORT).show();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        } catch (Exception e) { e.printStackTrace(); }
     }
 
     // ─── Model ────────────────────────────────────────────────────────────
 
     public static class BookmarkItem {
         String title, url;
-
-        BookmarkItem(String title, String url) {
-            this.title = title;
-            this.url = url;
-        }
+        BookmarkItem(String title, String url) { this.title = title; this.url = url; }
     }
 
     // ─── Adapter ──────────────────────────────────────────────────────────
 
     class BookmarkAdapter extends RecyclerView.Adapter<BookmarkAdapter.ViewHolder> {
         private List<BookmarkItem> items;
+        BookmarkAdapter(List<BookmarkItem> items) { this.items = items; }
 
-        BookmarkAdapter(List<BookmarkItem> items) {
-            this.items = items;
-        }
-
-        @NonNull
-        @Override
+        @NonNull @Override
         public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View view = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.item_bookmark, parent, false);
-            return new ViewHolder(view);
+            return new ViewHolder(LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_bookmark, parent, false));
         }
 
         @Override
@@ -212,49 +193,32 @@ public class BookmarksActivity extends AppCompatActivity {
             holder.title.setText(item.title);
             holder.url.setText(item.url);
 
-            // Animate
             holder.itemView.setAlpha(0f);
             holder.itemView.setTranslationY(20f);
-            holder.itemView.animate()
-                    .alpha(1f).translationY(0f)
-                    .setDuration(250)
+            holder.itemView.animate().alpha(1f).translationY(0f).setDuration(250)
                     .setStartDelay(position * 30L)
-                    .setInterpolator(new DecelerateInterpolator())
-                    .start();
+                    .setInterpolator(new DecelerateInterpolator()).start();
 
-            // Click to open
             holder.itemView.setOnClickListener(v -> {
-                if (MainActivity.session != null) {
-                    MainActivity.session.loadUri(item.url);
-                    finish();
-                }
+                if (MainActivity.session != null) { MainActivity.session.loadUri(item.url); finish(); }
             });
 
-            // Long press to edit/delete
             holder.itemView.setOnLongClickListener(v -> {
                 String[] options = {"✏️ Edit", "🗑️ Delete"};
                 new AlertDialog.Builder(BookmarksActivity.this)
-                        .setTitle(item.title)
-                        .setItems(options, (dialog, which) -> {
-                            if (which == 0) {
-                                // Edit
-                                showEditDialog(position);
-                            } else {
-                                // Delete
+                        .setTitle(item.title).setItems(options, (dialog, which) -> {
+                            if (which == 0) showEditDialog(position);
+                            else {
                                 items.remove(position);
                                 notifyItemRemoved(position);
                                 notifyItemRangeChanged(position, items.size());
                                 saveBookmarks();
                                 toggleEmptyState();
-                                Toast.makeText(BookmarksActivity.this,
-                                        "Deleted", Toast.LENGTH_SHORT).show();
                             }
-                        })
-                        .show();
+                        }).show();
                 return true;
             });
 
-            // Delete button
             holder.btnDelete.setOnClickListener(v -> {
                 items.remove(position);
                 notifyItemRemoved(position);
@@ -264,20 +228,15 @@ public class BookmarksActivity extends AppCompatActivity {
             });
         }
 
-        @Override
-        public int getItemCount() {
-            return items.size();
-        }
+        @Override public int getItemCount() { return items.size(); }
 
         class ViewHolder extends RecyclerView.ViewHolder {
             TextView title, url;
             MaterialButton btnDelete;
-
-            ViewHolder(@NonNull View itemView) {
-                super(itemView);
-                title = itemView.findViewById(R.id.bookmark_title);
-                url = itemView.findViewById(R.id.bookmark_url);
-                btnDelete = itemView.findViewById(R.id.btnDeleteBookmark);
+            ViewHolder(@NonNull View v) { super(v);
+                title = v.findViewById(R.id.bookmark_title);
+                url = v.findViewById(R.id.bookmark_url);
+                btnDelete = v.findViewById(R.id.btnDeleteBookmark);
             }
         }
     }
