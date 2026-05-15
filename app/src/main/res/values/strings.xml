@@ -1,3 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">PureWeb</string>
+
+    <!-- Home Page -->
+    <string name="home_subtitle">Private &amp; Lightweight Browser</string>
+    <string name="search_hint">Search or type URL</string>
+    <string name="quick_links">Quick Links</string>
+
+    <!-- Browser UI -->
+    <string name="menu_bookmarks">Bookmarks</string>
+    <string name="menu_history">History</string>
+    <string name="menu_settings">Settings</string>
+    <string name="menu_downloads">Downloads</string>
+    <string name="menu_refresh">Refresh</string>
+    <string name="menu_share">Share</string>
+    <string name="menu_find">Find in Page</string>
+    <string name="menu_desktop">Desktop Mode</string>
+    <string name="menu_extensions">Extensions</string>
+
+    <!-- Settings -->
+    <string name="settings_search_engine">Search Engine</string>
+    <string name="settings_search_desc">Choose your default search provider</string>
+    <string name="settings_extensions">Extensions</string>
+    <string name="settings_extensions_desc">Manage browser extensions &amp; add-ons</string>
+    <string name="settings_browsing_data">Browsing Data</string>
+    <string name="settings_browsing_desc">Clear cache, cookies and site data</string>
+    <string name="settings_clear_data">Clear Browsing Data</string>
+    <string name="settings_extension_store">Extension Store</string>
+    <string name="settings_install_ublock">Install uBlock Origin</string>
+    <string name="settings_install_custom">Install Custom Extension</string>
+    <string name="settings_cache_cleared">Cache Cleared!</string>
+
+    <!-- Search Engines -->
+    <string name="search_google">Google</string>
+    <string name="search_duckduckgo">DuckDuckGo (Privacy)</string>
+    <string name="search_bing">Bing</string>
+
+    <!-- Extension Dialog -->
+    <string name="dialog_install_title">Install Extension</string>
+    <string name="dialog_permissions_title">Permissions Required</string>
+    <string name="dialog_permissions_desc">This extension will have access to:</string>
+    <string name="dialog_private_browsing">Allow in Private Browsing</string>
+    <string name="dialog_private_desc">Extension works in private tabs too</string>
+    <string name="dialog_cancel">Cancel</string>
+    <string name="dialog_add">Add Extension</string>
+    <string name="dialog_installing">Installing…</string>
+    <string name="dialog_no_permissions">No special permissions required</string>
+
+    <!-- Video -->
+    <string name="video_detected">Detected Videos</string>
+    <string name="video_empty_title">No videos detected</string>
+    <string name="video_empty_desc">Videos will appear here once detected on the page</string>
+    <string name="video_download">Download</string>
+    <string name="video_player">Video Player</string>
+
+    <!-- Extensions -->
+    <string name="extensions_store">Extension Store</string>
+    <string name="extensions_search">Search extensions…</string>
+    <string name="extensions_add">Add</string>
+    <string name="extensions_installed">Installed ✓</string>
+    <string name="extensions_install_failed">Installation failed</string>
+    <string name="extensions_about">About this extension</string>
+    <string name="extensions_permissions">Permissions</string>
+
+    <!-- General -->
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="install">Install</string>
+    <string name="search">Search</string>
 </resources>
