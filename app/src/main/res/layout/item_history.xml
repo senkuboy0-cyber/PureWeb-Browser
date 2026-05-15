@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginVertical="2dp"
+    android:layout_marginHorizontal="8dp"
+    android:foreground="?attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="1dp"
+    app:strokeWidth="0dp"
+    app:cardBackgroundColor="?android:colorBackground">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:gravity="center_vertical">
+
+        <TextView android:layout_width="40dp" android:layout_height="40dp"
+            android:gravity="center" android:text="🌐"
+            android:textSize="18sp"
+            android:background="@drawable/ic_extension_bg" />
+
+        <LinearLayout
+            android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:layout_marginStart="12dp"
+            android:orientation="vertical">
+
+            <TextView android:id="@+id/history_title"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Page Title" android:textSize="14sp"
+                android:textStyle="bold" android:textColor="?android:textColorPrimary"
+                android:maxLines="1" android:ellipsize="end" />
+
+            <TextView android:id="@+id/history_url"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="https://example.com" android:textSize="11sp"
+                android:textColor="?android:textColorSecondary"
+                android:maxLines="1" android:ellipsize="middle"
+                android:alpha="0.7" />
+
+            <TextView android:id="@+id/history_time"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="2:30 PM" android:textSize="10sp"
+                android:textColor="?android:textColorSecondary"
+                android:alpha="0.5" android:layout_marginTop="2dp" />
+
+        </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDeleteHistory"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="32dp" android:layout_height="32dp"
+            android:text="✕" android:textSize="12sp"
+            app:cornerRadius="16dp"
+            app:backgroundTint="?colorErrorContainer" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>
