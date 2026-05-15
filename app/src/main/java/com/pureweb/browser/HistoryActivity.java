@@ -18,6 +18,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
 
+import org.mozilla.geckoview.GeckoSession;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
