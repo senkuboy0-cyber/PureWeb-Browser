@@ -30,8 +30,8 @@ import java.util.Locale;
 public class ExtensionDetailActivity extends AppCompatActivity {
 
     private ExtensionsActivity.ExtensionItem extensionItem;
-    private MaterialCardView heroCard, statsCard, descCard, permissionsCard;
     private MaterialButton addBtn;
+    private MaterialCardView heroCard, statsCard, descCard, permissionsCard;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,20 +57,18 @@ public class ExtensionDetailActivity extends AppCompatActivity {
         addBtn = findViewById(R.id.detail_btn_add);
         LinearLayout permissionsContainer = findViewById(R.id.detail_permissions);
 
-        heroCard = findViewById(R.id.detail_icon_container).getParent() instanceof MaterialCardView ?
-                (MaterialCardView) findViewById(R.id.detail_icon_container).getParent() : null;
-        statsCard = findViewById(R.id.detail_icon_container).getRootView().findViewById(
-                getResources().getIdentifier("statsCard", "id", getPackageName()));
-        if (statsCard == null) statsCard = findViewById(android.R.id.content)
-                .getRootView().findViewWithTag("statsCard");
+        heroCard = findViewById(R.id.heroCard);
+        statsCard = findViewById(R.id.statsCard);
+        descCard = findViewById(R.id.descCard);
+        permissionsCard = findViewById(R.id.permissionsCard);
 
         // ─── Set Data ───────────────────────────────────────────────────
         name.setText(extensionItem.name);
-        authors.setText("by " + extensionItem.authors);
-        desc.setText(extensionItem.desc);
+        authors.setText("by " + (extensionItem.authors.isEmpty() ? "Unknown" : extensionItem.authors));
+        desc.setText(extensionItem.desc.isEmpty() ? "No description available" : extensionItem.desc);
         rating.setText(String.format(Locale.US, "%.1f", extensionItem.rating));
         usersText.setText(NumberFormat.getNumberInstance(Locale.US).format(extensionItem.users));
-        versionText.setText("v" + extensionItem.version);
+        versionText.setText("v" + (extensionItem.version.isEmpty() ? "1.0" : extensionItem.version));
 
         // Load icon
         if (extensionItem.iconUrl != null && !extensionItem.iconUrl.isEmpty()) {
@@ -109,16 +107,19 @@ public class ExtensionDetailActivity extends AppCompatActivity {
     }
 
     private void animateEntrance() {
+        long delay = 100;
+
         // Hero Section
-        View heroSection = findViewById(R.id.detail_icon_container);
-        if (heroSection != null) {
-            heroSection.setAlpha(0f);
-            heroSection.setTranslationY(-40f);
-            heroSection.animate()
+        if (heroCard != null) {
+            heroCard.setAlpha(0f);
+            heroCard.setTranslationY(-40f);
+            heroCard.animate()
                     .alpha(1f).translationY(0f)
                     .setDuration(400)
+                    .setStartDelay(delay)
                     .setInterpolator(new DecelerateInterpolator())
                     .start();
+            delay += 150;
         }
 
         // Stats Card
@@ -128,9 +129,10 @@ public class ExtensionDetailActivity extends AppCompatActivity {
             statsCard.animate()
                     .alpha(1f).translationY(0f)
                     .setDuration(350)
-                    .setStartDelay(200)
+                    .setStartDelay(delay)
                     .setInterpolator(new DecelerateInterpolator())
                     .start();
+            delay += 150;
         }
 
         // Description
@@ -140,9 +142,10 @@ public class ExtensionDetailActivity extends AppCompatActivity {
             descCard.animate()
                     .alpha(1f).translationY(0f)
                     .setDuration(350)
-                    .setStartDelay(350)
+                    .setStartDelay(delay)
                     .setInterpolator(new DecelerateInterpolator())
                     .start();
+            delay += 150;
         }
 
         // Permissions
@@ -152,20 +155,23 @@ public class ExtensionDetailActivity extends AppCompatActivity {
             permissionsCard.animate()
                     .alpha(1f).translationY(0f)
                     .setDuration(350)
-                    .setStartDelay(500)
+                    .setStartDelay(delay)
                     .setInterpolator(new DecelerateInterpolator())
                     .start();
+            delay += 150;
         }
 
         // Install Button
-        addBtn.setAlpha(0f);
-        addBtn.setTranslationY(30f);
-        addBtn.animate()
-                .alpha(1f).translationY(0f)
-                .setDuration(300)
-                .setStartDelay(650)
-                .setInterpolator(new DecelerateInterpolator())
-                .start();
+        if (addBtn != null) {
+            addBtn.setAlpha(0f);
+            addBtn.setTranslationY(30f);
+            addBtn.animate()
+                    .alpha(1f).translationY(0f)
+                    .setDuration(300)
+                    .setStartDelay(delay)
+                    .setInterpolator(new DecelerateInterpolator())
+                    .start();
+        }
     }
 
     private void startInstall() {
