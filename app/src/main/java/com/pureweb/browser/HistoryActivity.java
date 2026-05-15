@@ -17,7 +17,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.card.MaterialCardView;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -25,7 +24,6 @@ import org.json.JSONObject;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -49,9 +47,7 @@ public class HistoryActivity extends AppCompatActivity {
         btnClear = findViewById(R.id.btnClearHistory);
 
         prefs = getSharedPreferences("PureWebHistory", MODE_PRIVATE);
-
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-
         loadHistory();
 
         btnClear.setOnClickListener(v -> {
@@ -83,13 +79,9 @@ public class HistoryActivity extends AppCompatActivity {
                         obj.optLong("timestamp", System.currentTimeMillis())
                 ));
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        } catch (Exception e) { e.printStackTrace(); }
 
-        // Sort by newest first
         Collections.sort(historyList, (a, b) -> Long.compare(b.timestamp, a.timestamp));
-
         adapter = new HistoryAdapter(historyList);
         recyclerView.setAdapter(adapter);
         toggleEmptyState();
@@ -106,9 +98,7 @@ public class HistoryActivity extends AppCompatActivity {
                 arr.put(obj);
             }
             prefs.edit().putString("history", arr.toString()).apply();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        } catch (Exception e) { e.printStackTrace(); }
     }
 
     private void toggleEmptyState() {
@@ -121,75 +111,50 @@ public class HistoryActivity extends AppCompatActivity {
         }
     }
 
-    // Add to history from browser (static utility)
     public static void addToHistory(Context context, String title, String url) {
         SharedPreferences prefs = context.getSharedPreferences("PureWebHistory", MODE_PRIVATE);
         try {
             String json = prefs.getString("history", "[]");
             JSONArray arr = new JSONArray(json);
-
-            // Remove duplicate URL
             JSONArray filtered = new JSONArray();
             for (int i = 0; i < arr.length(); i++) {
-                if (!arr.getJSONObject(i).optString("url").equals(url)) {
+                if (!arr.getJSONObject(i).optString("url").equals(url))
                     filtered.put(arr.getJSONObject(i));
-                }
             }
-
             JSONObject obj = new JSONObject();
             obj.put("title", title);
             obj.put("url", url);
             obj.put("timestamp", System.currentTimeMillis());
             filtered.put(obj);
-
-            // Keep max 500 entries
             if (filtered.length() > 500) {
                 JSONArray trimmed = new JSONArray();
-                for (int i = filtered.length() - 500; i < filtered.length(); i++) {
+                for (int i = filtered.length() - 500; i < filtered.length(); i++)
                     trimmed.put(filtered.getJSONObject(i));
-                }
                 filtered = trimmed;
             }
-
             prefs.edit().putString("history", filtered.toString()).apply();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        } catch (Exception e) { e.printStackTrace(); }
     }
-
-    // ─── Model ────────────────────────────────────────────────────────────
 
     public static class HistoryItem {
         String title, url;
         long timestamp;
-
         HistoryItem(String title, String url, long timestamp) {
-            this.title = title;
-            this.url = url;
-            this.timestamp = timestamp;
+            this.title = title; this.url = url; this.timestamp = timestamp;
         }
-
         String getFormattedTime() {
-            SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy • h:mm a", Locale.US);
-            return sdf.format(new Date(timestamp));
+            return new SimpleDateFormat("MMM dd, yyyy • h:mm a", Locale.US).format(new Date(timestamp));
         }
     }
 
-    // ─── Adapter ──────────────────────────────────────────────────────────
-
     class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHolder> {
         private List<HistoryItem> items;
+        HistoryAdapter(List<HistoryItem> items) { this.items = items; }
 
-        HistoryAdapter(List<HistoryItem> items) {
-            this.items = items;
-        }
-
-        @NonNull
-        @Override
+        @NonNull @Override
         public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View view = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.item_history, parent, false);
-            return new ViewHolder(view);
+            return new ViewHolder(LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_history, parent, false));
         }
 
         @Override
@@ -199,50 +164,35 @@ public class HistoryActivity extends AppCompatActivity {
             holder.url.setText(item.url);
             holder.time.setText(item.getFormattedTime());
 
-            // Animate entrance
-            holder.itemView.setAlpha(0f);
-            holder.itemView.setTranslationX(-30f);
-            holder.itemView.animate()
-                    .alpha(1f).translationX(0f)
-                    .setDuration(250)
+            holder.itemView.setAlpha(0f); holder.itemView.setTranslationX(-30f);
+            holder.itemView.animate().alpha(1f).translationX(0f).setDuration(250)
                     .setStartDelay(position * 30L)
-                    .setInterpolator(new DecelerateInterpolator())
-                    .start();
+                    .setInterpolator(new DecelerateInterpolator()).start();
 
-            // Click to open URL
             holder.itemView.setOnClickListener(v -> {
-                if (MainActivity.session != null) {
-                    MainActivity.session.loadUri(item.url);
-                    finish();
-                }
+                GeckoSession session = MainActivity.getCurrentSession();
+                if (session != null) { session.loadUri(item.url); finish(); }
             });
 
-            // Delete
             holder.btnDelete.setOnClickListener(v -> {
                 items.remove(position);
                 notifyItemRemoved(position);
                 notifyItemRangeChanged(position, items.size());
                 saveHistory();
                 toggleEmptyState();
-                Toast.makeText(HistoryActivity.this, "Deleted", Toast.LENGTH_SHORT).show();
             });
         }
 
-        @Override
-        public int getItemCount() {
-            return items.size();
-        }
+        @Override public int getItemCount() { return items.size(); }
 
         class ViewHolder extends RecyclerView.ViewHolder {
             TextView title, url, time;
             MaterialButton btnDelete;
-
-            ViewHolder(@NonNull View itemView) {
-                super(itemView);
-                title = itemView.findViewById(R.id.history_title);
-                url = itemView.findViewById(R.id.history_url);
-                time = itemView.findViewById(R.id.history_time);
-                btnDelete = itemView.findViewById(R.id.btnDeleteHistory);
+            ViewHolder(@NonNull View v) { super(v);
+                title = v.findViewById(R.id.history_title);
+                url = v.findViewById(R.id.history_url);
+                time = v.findViewById(R.id.history_time);
+                btnDelete = v.findViewById(R.id.btnDeleteHistory);
             }
         }
     }
