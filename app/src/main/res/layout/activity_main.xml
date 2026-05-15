@@ -1,136 +1,433 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+    PureWeb Browser - Main Activity Layout
+    Material 3 Design with Home Page + Browser Mode
+-->
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/root_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFFFF">
+    android:background="?android:colorBackground">
 
-    <!-- টপ বার -->
+    <!-- ================================================================== -->
+    <!-- 🏠 HOME PAGE (visible when no page is loaded)                       -->
+    <!-- ================================================================== -->
     <LinearLayout
-        android:id="@+id/topBar"
+        android:id="@+id/homePage"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="vertical"
-        android:layout_alignParentTop="true">
+        android:gravity="center_horizontal"
+        android:background="@color/background"
+        android:animateLayoutChanges="true">
 
-        <ProgressBar
-            android:id="@+id/progressBar"
-            style="?android:attr/progressBarStyleHorizontal"
+        <!-- Spacer -->
+        <Space
             android:layout_width="match_parent"
-            android:layout_height="3dp"
-            android:progressTint="#4CAF50"
-            android:background="#E0E0E0"/>
+            android:layout_height="0dp"
+            android:layout_weight="1" />
 
-        <androidx.cardview.widget.CardView
+        <!-- 🏷️ Logo / Brand -->
+        <LinearLayout
+            android:id="@+id/logoSection"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:alpha="0.9">
+
+            <TextView
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:gravity="center"
+                android:text="🌊"
+                android:textSize="44sp"
+                android:background="@drawable/ic_extension_bg"
+                android:elevation="4dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="PureWeb"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:textColor="?colorPrimary"
+                android:letterSpacing="0.05" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Private & Lightweight Browser"
+                android:textSize="13sp"
+                android:textColor="?android:textColorSecondary"
+                android:alpha="0.7" />
+
+        </LinearLayout>
+
+        <!-- Spacer -->
+        <Space
             android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:layout_margin="5dp"
-            android:elevation="4dp">
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <!-- 🔍 Quick Search Bar -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/homeSearchCard"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginHorizontal="24dp"
+            android:layout_marginBottom="24dp"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="4dp"
+            app:strokeWidth="0dp"
+            app:cardBackgroundColor="?android:colorBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:padding="5dp"
-                android:background="#F5F5F5">
+                android:paddingHorizontal="20dp">
 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@android:drawable/ic_menu_search"
-                    android:layout_marginEnd="5dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🔍"
+                    android:textSize="18sp" />
 
-                <EditText
-                    android:id="@+id/urlBar"
+                <TextView
+                    android:id="@+id/homeSearchText"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginHorizontal="12dp"
+                    android:text="Search or type URL"
+                    android:textSize="15sp"
+                    android:textColor="?android:textColorSecondary"
+                    android:singleLine="true" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="⌨️"
+                    android:textSize="18sp"
+                    android:alpha="0.5" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- ⭐ Speed Dial / Quick Links -->
+        <TextView
+            android:id="@+id/speedDialLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="Quick Links"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="?android:textColorSecondary"
+            android:letterSpacing="0.05" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/speedDialGrid"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginBottom="80dp"
+            android:nestedScrollingEnabled="false"
+            android:overScrollMode="never" />
+
+    </LinearLayout>
+
+    <!-- ================================================================== -->
+    <!-- 🌐 BROWSER VIEW (visible when a page is loaded)                      -->
+    <!-- ================================================================== -->
+    <FrameLayout
+        android:id="@+id/browserContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        android:animateLayoutChanges="true">
+
+        <!-- GeckoView (WebView) -->
+        <org.mozilla.geckoview.GeckoView
+            android:id="@+id/geckoView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="0dp"
+            android:layout_marginBottom="56dp" />
+
+        <!-- ============================================================== -->
+        <!-- 🔝 TOP BAR (URL Bar)                                            -->
+        <!-- ============================================================== -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/topBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="4dp"
+            android:layout_marginTop="4dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="6dp"
+            app:strokeWidth="0dp"
+            app:cardBackgroundColor="?android:colorBackground"
+            android:animateLayoutChanges="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:orientation="vertical">
+
+                <!-- Progress Bar -->
+                <ProgressBar
+                    android:id="@+id/progressBar"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="2dp"
+                    android:progressTint="?colorPrimary"
+                    android:background="#E0E0E0"
+                    android:max="100"
+                    android:progress="0" />
+
+                <!-- URL Bar Row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="8dp">
+
+                    <!-- Site Security Icon -->
+                    <TextView
+                        android:id="@+id/securityIcon"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:gravity="center"
+                        android:text="🔒"
+                        android:textSize="12sp" />
+
+                    <!-- URL Input -->
+                    <EditText
+                        android:id="@+id/urlBar"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_marginHorizontal="4dp"
+                        android:background="@null"
+                        android:hint="Search or type URL"
+                        android:textSize="14sp"
+                        android:textColor="?android:textColorPrimary"
+                        android:textColorHint="?android:textColorSecondary"
+                        android:singleLine="true"
+                        android:imeOptions="actionGo"
+                        android:inputType="textUri" />
+
+                    <!-- Settings/Menu Button -->
+                    <ImageButton
+                        android:id="@+id/menuBtn"
+                        android:layout_width="38dp"
+                        android:layout_height="38dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@drawable/ic_menu"
+                        android:tint="?android:textColorSecondary"
+                        android:contentDescription="Menu" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- 🎬 Video Detection Badge -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/videoBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginTop="68dp"
+            android:layout_marginEnd="12dp"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="#EE1A1A2E"
+            android:visibility="gone"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🎬"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/videoCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:text="0"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- ============================================================== -->
+        <!-- 📌 BOTTOM NAVIGATION BAR                                        -->
+        <!-- ============================================================== -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/bottomNav"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_gravity="bottom"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="12dp"
+            app:strokeWidth="0dp"
+            app:cardBackgroundColor="?android:colorBackground"
+            android:layout_marginHorizontal="4dp"
+            android:layout_marginBottom="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:weightSum="5">
+
+                <!-- ◀ Back -->
+                <FrameLayout
+                    android:id="@+id/btnBack"
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
                     android:layout_weight="1"
-                    android:background="@null"
-                    android:hint="Search or type URL"
-                    android:singleLine="true"
-                    android:imeOptions="actionGo"/>
-
-                <ImageButton
-                    android:id="@+id/menuBtn"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:src="@android:drawable/ic_menu_more"/>
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foregroundTint="?android:textColorSecondary">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:text="◀"
+                        android:textSize="20sp"
+                        android:alpha="0.7" />
+
+                </FrameLayout>
+
+                <!-- ▶ Forward -->
+                <FrameLayout
+                    android:id="@+id/btnForward"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:text="▶"
+                        android:textSize="20sp"
+                        android:alpha="0.7" />
+
+                </FrameLayout>
+
+                <!-- 🏠 Home / Speed Dial -->
+                <FrameLayout
+                    android:id="@+id/btnHome"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1.2"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <LinearLayout
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_gravity="center"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:background="?colorPrimary"
+                        android:elevation="4dp"
+                        android:translationZ="4dp"
+                        app:cornerRadius="24dp"
+                        style="@style/Widget.Material3.Button">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🏠"
+                            android:textSize="18sp" />
+
+                    </LinearLayout>
+
+                </FrameLayout>
+
+                <!-- 🔄 Refresh -->
+                <FrameLayout
+                    android:id="@+id/btnRefresh"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:text="🔄"
+                        android:textSize="20sp"
+                        android:alpha="0.7" />
+
+                </FrameLayout>
+
+                <!-- ⭐ Bookmarks -->
+                <FrameLayout
+                    android:id="@+id/btnBookmarks"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:text="⭐"
+                        android:textSize="18sp"
+                        android:alpha="0.7" />
+
+                </FrameLayout>
+
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
-    </LinearLayout>
 
-    <!-- GeckoView -->
-    <org.mozilla.geckoview.GeckoView
-        android:id="@+id/geckoView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_below="@id/topBar"
-        android:layout_above="@id/bottomNav"/>
+        </com.google.android.material.card.MaterialCardView>
 
-    <!-- Video Badge -->
-    <TextView
-        android:id="@+id/videoBadge"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@id/bottomNav"
-        android:layout_alignParentEnd="true"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="8dp"
-        android:background="#CC1A1A2E"
-        android:text="🎬 0 videos"
-        android:textColor="#FFFFFF"
-        android:textSize="12sp"
-        android:padding="8dp"
-        android:visibility="gone"/>
+    </FrameLayout>
 
-    <!-- বটম নেভিগেশন -->
-    <LinearLayout
-        android:id="@+id/bottomNav"
-        android:layout_width="match_parent"
-        android:layout_height="55dp"
-        android:layout_alignParentBottom="true"
-        android:background="#FAFAFA"
-        android:orientation="horizontal"
-        android:weightSum="4"
-        android:elevation="4dp">
-
-        <ImageButton
-            android:id="@+id/btnBack"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="?attr/selectableItemBackground"
-            android:src="@android:drawable/ic_media_previous"
-            android:tint="#424242"/>
-
-        <ImageButton
-            android:id="@+id/btnForward"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="?attr/selectableItemBackground"
-            android:src="@android:drawable/ic_media_next"
-            android:tint="#424242"/>
-
-        <ImageButton
-            android:id="@+id/btnHome"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="?attr/selectableItemBackground"
-            android:src="@android:drawable/ic_menu_compass"
-            android:tint="#4CAF50"/>
-
-        <ImageButton
-            android:id="@+id/btnRefresh"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="?attr/selectableItemBackground"
-            android:src="@android:drawable/ic_menu_rotate"
-            android:tint="#424242"/>
-    </LinearLayout>
-
-</RelativeLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
