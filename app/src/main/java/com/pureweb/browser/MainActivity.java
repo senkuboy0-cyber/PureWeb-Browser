@@ -102,7 +102,6 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
         setupUrlBar();
         setupMenuButton();
 
-        // Initialize TabManager with first tab
         tabManager = new TabManager(runtime, geckoView);
         tabManager.setListener(new TabManager.TabListener() {
             @Override public void onTabChanged(int pos) {
@@ -111,7 +110,7 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
                     if (tab != null) {
                         urlBar.setText(tab.url);
                         updateSecurityIcon(tab.url);
-                        canGoBack = false; // Reset, delegate will update
+                        canGoBack = false;
                         updateTabBadge();
                     }
                 });
@@ -120,6 +119,7 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
             @Override public void onTabTitleChanged(int pos, String title) {}
         });
         tabManager.newTab("about:blank");
+        setupSessionDelegates(tabManager.getCurrentTab().session);
 
         showHomePage(true);
     }
@@ -152,7 +152,6 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
         if (runtime == null) runtime = GeckoRuntime.create(this);
     }
 
-    // Get current session from TabManager
     public static GeckoSession getCurrentSession() {
         if (tabManager == null || tabManager.getCurrentTab() == null) return null;
         return tabManager.getCurrentTab().session;
@@ -240,9 +239,6 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
         return null;
     }
 
-    // ====================================================================
-    //  VIDEO DETECTION
-    // ====================================================================
     @Override public void onVideoDetected(VideoInfo v) { runOnUiThread(() -> { detectedVideos.add(v); updateVideoBadge(); }); }
     @Override public void onVideoDetecting(String url) {}
     @Override public void onVideosCleared() { runOnUiThread(() -> { detectedVideos.clear(); updateVideoBadge(); }); }
@@ -260,7 +256,32 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
         }
     }
 
-    private void injectVideoSniffer() { /* same as before */ }
+    private void injectVideoSniffer() {
+        GeckoSession s = getCurrentSession();
+        if (s == null) return;
+        String js = "javascript:(function(){if(window.__pw)return;window.__pw=true;" +
+            "var VP=/\\.(mp4|webm|m3u8|mpd|ts|mkv|mov|flv|mp3|aac|ogg|wav)/i;" +
+            "var det=new Set();var q=[];var snd=false;" +
+            "function nxt(){if(q.length===0){snd=false;return;}snd=true;var i=q.shift();" +
+            "window.location.href='pureweb://video?url='+encodeURIComponent(i.u)+'&type='+i.t+'&title='+encodeURIComponent(i.l);" +
+            "setTimeout(nxt,200);}" +
+            "function notify(url,type){if(!url||det.has(url))return;det.add(url);" +
+            "q.push({u:url,t:type,l:document.title||'Video'});if(!snd)nxt();}" +
+            "var ox=XMLHttpRequest.prototype.open;XMLHttpRequest.prototype.open=function(m,u){" +
+            "if(typeof u==='string'&&VP.test(u))notify(u,'xhr');return ox.apply(this,arguments);};" +
+            "if(window.fetch){var of=window.fetch;window.fetch=function(i,o){" +
+            "var u=typeof i==='string'?i:(i&&i.url?i.url:'');if(u&&VP.test(u))notify(u,'fetch');" +
+            "return of.apply(this,arguments);};}" +
+            "function chkV(v){var s=[v.src,v.currentSrc];v.querySelectorAll('source').forEach(function(x){s.push(x.src);});" +
+            "s.forEach(function(u){if(u&&u.length>5){if(VP.test(u))notify(u,'video');else if(u.startsWith('blob:'))notify(u,'blob');}});}" +
+            "function detectM3U8(){document.querySelectorAll('source[src*=\".m3u8\"],video source[src*=\".m3u8\"],a[href*=\".m3u8\"]').forEach(function(el){" +
+            "var src=el.src||el.href;if(src&&VP.test(src))notify(src,'m3u8');});}" +
+            "setInterval(detectM3U8,2000);" +
+            "new MutationObserver(function(){document.querySelectorAll('video').forEach(chkV);detectM3U8();})" +
+            ".observe(document.documentElement,{childList:true,subtree:true});" +
+            "document.querySelectorAll('video').forEach(chkV);detectM3U8();})();";
+        s.loadUri(js);
+    }
 
     private void showVideoBottomSheet() {
         BottomSheetDialog d = new BottomSheetDialog(this);
@@ -294,22 +315,16 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
         d.setContentView(v); d.show();
     }
 
-    // ====================================================================
-    //  LIFECYCLE
-    // ====================================================================
     @Override protected void onResume() {
         super.onResume();
-        if (tabManager != null && tabManager.getCurrentTab() != null) {
-            GeckoSession s = tabManager.getCurrentTab().session;
-            s.setActive(true);
-            if (geckoView.getSession() != s) geckoView.setSession(s);
-        }
+        GeckoSession s = getCurrentSession();
+        if (s != null) { s.setActive(true); if (geckoView.getSession() != s) geckoView.setSession(s); }
         if (!proxyController.isProxyRunning()) proxyController.startLocalProxy();
     }
     @Override protected void onPause() {
         super.onPause();
-        if (tabManager != null && tabManager.getCurrentTab() != null)
-            tabManager.getCurrentTab().session.setActive(false);
+        GeckoSession s = getCurrentSession();
+        if (s != null) s.setActive(false);
         if (exoPlayer != null) exoPlayer.pause();
     }
     @Override protected void onDestroy() {
@@ -319,23 +334,22 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
     }
     @Override public void onBackPressed() {
         if (isBrowserMode && canGoBack) {
-            if (tabManager.getCurrentTab() != null)
-                tabManager.getCurrentTab().session.goBack();
+            GeckoSession s = getCurrentSession();
+            if (s != null) s.goBack();
         } else if (isBrowserMode) showHomePage(true);
         else super.onBackPressed();
     }
 
-    // ====================================================================
-    //  NAVIGATION
-    // ====================================================================
     private void setupNavigationButtons() {
         btnBack.setOnClickListener(v -> {
-            if (tabManager.getCurrentTab() != null) tabManager.getCurrentTab().session.goBack();
+            GeckoSession s = getCurrentSession();
+            if (s != null) s.goBack();
             v.animate().scaleX(0.85f).scaleY(0.85f).setDuration(80)
                     .withEndAction(() -> v.animate().scaleX(1f).scaleY(1f).setDuration(80).start()).start();
         });
         btnForward.setOnClickListener(v -> {
-            if (tabManager.getCurrentTab() != null) tabManager.getCurrentTab().session.goForward();
+            GeckoSession s = getCurrentSession();
+            if (s != null) s.goForward();
             v.animate().scaleX(0.85f).scaleY(0.85f).setDuration(80)
                     .withEndAction(() -> v.animate().scaleX(1f).scaleY(1f).setDuration(80).start()).start();
         });
@@ -346,15 +360,13 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
         });
         btnRefresh.setOnClickListener(v -> {
             v.animate().rotationBy(360f).setDuration(400).start();
-            if (tabManager.getCurrentTab() != null) tabManager.getCurrentTab().session.reload();
+            GeckoSession s = getCurrentSession();
+            if (s != null) s.reload();
         });
         btnTabs.setOnClickListener(v -> showTabSwitcher());
         videoBadge.setOnClickListener(v -> showVideoBottomSheet());
     }
 
-    // ====================================================================
-    //  TAB SWITCHER
-    // ====================================================================
     private void showTabSwitcher() {
         BottomSheetDialog dialog = new BottomSheetDialog(this);
         View view = LayoutInflater.from(this).inflate(R.layout.tab_switcher_sheet, null);
@@ -367,19 +379,8 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
 
         TabSwitcherAdapter adapter = new TabSwitcherAdapter(tabManager.getTabs(),
                 tabManager.getCurrentIndex(),
-                // Tab click
-                index -> {
-                    tabManager.switchToTab(index);
-                    dialog.dismiss();
-                    setupSessionDelegates(tabManager.getCurrentTab().session);
-                },
-                // Tab close
-                index -> {
-                    tabManager.closeTab(index);
-                    adapter.notifyDataSetChanged();
-                    countText.setText(String.valueOf(tabManager.getTabCount()));
-                    if (tabManager.getTabCount() == 0) dialog.dismiss();
-                });
+                index -> { tabManager.switchToTab(index); dialog.dismiss(); setupSessionDelegates(tabManager.getCurrentTab().session); },
+                index -> { tabManager.closeTab(index); adapter.notifyDataSetChanged(); countText.setText(String.valueOf(tabManager.getTabCount())); });
 
         rv.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
         rv.setAdapter(adapter);
@@ -401,40 +402,25 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
     private void setupSessionDelegates(GeckoSession session) {
         session.setNavigationDelegate(new GeckoSession.NavigationDelegate() {
             @Override public void onCanGoBack(GeckoSession s, boolean cgb) {
-                canGoBack = cgb;
-                btnBack.setAlpha(canGoBack ? 1.0f : 0.4f);
+                canGoBack = cgb; btnBack.setAlpha(canGoBack ? 1.0f : 0.4f);
             }
             @Override public void onLocationChange(GeckoSession s, String url) {
                 runOnUiThread(() -> {
-                    urlBar.setText(url);
-                    updateSecurityIcon(url);
-                    if (tabManager.getCurrentTab() != null) {
-                        tabManager.getCurrentTab().url = url;
-                    }
+                    urlBar.setText(url); updateSecurityIcon(url);
+                    if (tabManager.getCurrentTab() != null) tabManager.getCurrentTab().url = url;
                 });
             }
             @Override public GeckoResult<AllowOrDeny> onLoadRequest(
                     GeckoSession s, GeckoSession.NavigationDelegate.LoadRequest r) {
-                runOnUiThread(() -> {
-                    if (!isBrowserMode) showBrowserMode(true);
-                    HistoryActivity.addToHistory(MainActivity.this, r.uri, r.uri);
-                });
+                runOnUiThread(() -> { if (!isBrowserMode) showBrowserMode(true); HistoryActivity.addToHistory(MainActivity.this, r.uri, r.uri); });
                 if (r.uri.startsWith("pureweb://video")) {
-                    try {
-                        Uri uri = Uri.parse(r.uri);
-                        String vu = uri.getQueryParameter("url");
-                        String ty = uri.getQueryParameter("type");
-                        String ti = uri.getQueryParameter("title");
-                        if (vu != null) videoDetectionManager.processDetectedUrl(vu, ty, ti);
-                    } catch (Exception e) { e.printStackTrace(); }
+                    try { Uri uri = Uri.parse(r.uri); videoDetectionManager.processDetectedUrl(uri.getQueryParameter("url"), uri.getQueryParameter("type"), uri.getQueryParameter("title")); }
+                    catch (Exception e) { e.printStackTrace(); }
                     return GeckoResult.fromValue(AllowOrDeny.DENY);
                 }
                 if (r.uri.startsWith("pureweb://m3u8")) {
-                    try {
-                        Uri uri = Uri.parse(r.uri);
-                        String mu = uri.getQueryParameter("url");
-                        if (mu != null) videoDetectionManager.processDetectedUrl(mu, "m3u8", null);
-                    } catch (Exception e) { e.printStackTrace(); }
+                    try { Uri uri = Uri.parse(r.uri); videoDetectionManager.processDetectedUrl(uri.getQueryParameter("url"), "m3u8", null); }
+                    catch (Exception e) { e.printStackTrace(); }
                     return GeckoResult.fromValue(AllowOrDeny.DENY);
                 }
                 return GeckoResult.fromValue(AllowOrDeny.ALLOW);
@@ -442,25 +428,9 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
         });
 
         session.setProgressDelegate(new GeckoSession.ProgressDelegate() {
-            @Override public void onPageStart(GeckoSession s, String url) {
-                runOnUiThread(() -> {
-                    progressBar.setVisibility(View.VISIBLE);
-                    progressBar.setProgress(0);
-                    detectedVideos.clear();
-                    updateVideoBadge();
-                });
-            }
-            @Override public void onPageStop(GeckoSession s, boolean success) {
-                runOnUiThread(() -> {
-                    progressBar.setVisibility(View.GONE);
-                    progressBar.setProgress(100);
-                });
-                String u = urlBar.getText().toString();
-                if (!u.contains("youtube.com") && !u.contains("youtu.be")) injectVideoSniffer();
-            }
-            @Override public void onProgressChange(GeckoSession s, int p) {
-                runOnUiThread(() -> progressBar.setProgress(p));
-            }
+            @Override public void onPageStart(GeckoSession s, String url) { runOnUiThread(() -> { progressBar.setVisibility(View.VISIBLE); progressBar.setProgress(0); detectedVideos.clear(); updateVideoBadge(); }); }
+            @Override public void onPageStop(GeckoSession s, boolean success) { runOnUiThread(() -> { progressBar.setVisibility(View.GONE); progressBar.setProgress(100); }); }
+            @Override public void onProgressChange(GeckoSession s, int p) { runOnUiThread(() -> progressBar.setProgress(p)); }
         });
 
         session.setContentDelegate(new GeckoSession.ContentDelegate() {
@@ -470,19 +440,14 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
                     if (fs) {
                         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
                         getWindow().getDecorView().setSystemUiVisibility(
-                                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                                | View.SYSTEM_UI_FLAG_FULLSCREEN
-                                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
-                        topBar.setVisibility(View.GONE);
-                        bottomNav.setVisibility(View.GONE);
+                                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_FULLSCREEN
+                                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+                        topBar.setVisibility(View.GONE); bottomNav.setVisibility(View.GONE);
                     } else {
                         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
                         getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
-                        topBar.setVisibility(View.VISIBLE);
-                        bottomNav.setVisibility(View.VISIBLE);
+                        topBar.setVisibility(View.VISIBLE); bottomNav.setVisibility(View.VISIBLE);
                     }
                 });
             }
@@ -491,9 +456,6 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
         });
     }
 
-    // ====================================================================
-    //  TAB SWITCHER ADAPTER
-    // ====================================================================
     class TabSwitcherAdapter extends RecyclerView.Adapter<TabSwitcherAdapter.ViewHolder> {
         private List<TabManager.Tab> tabs;
         private int currentIndex;
@@ -501,30 +463,21 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
 
         interface OnTabAction { void onAction(int index); }
 
-        TabSwitcherAdapter(List<TabManager.Tab> tabs, int current,
-                           OnTabAction click, OnTabAction close) {
-            this.tabs = tabs; this.currentIndex = current;
-            this.onTabClick = click; this.onTabClose = close;
+        TabSwitcherAdapter(List<TabManager.Tab> tabs, int current, OnTabAction click, OnTabAction close) {
+            this.tabs = tabs; this.currentIndex = current; this.onTabClick = click; this.onTabClose = close;
         }
 
-        @NonNull @Override
-        public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            return new ViewHolder(LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.item_tab, parent, false));
+        @NonNull @Override public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            return new ViewHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.item_tab, parent, false));
         }
 
-        @Override
-        public void onBindViewHolder(@NonNull ViewHolder h, int pos) {
+        @Override public void onBindViewHolder(@NonNull ViewHolder h, int pos) {
             TabManager.Tab tab = tabs.get(pos);
             h.title.setText(tab.getDisplayTitle());
             h.url.setText(tab.getDisplayUrl());
             h.favicon.setText(tab.getFavicon());
-
-            // Highlight active tab
             h.card.setStrokeWidth(pos == currentIndex ? 3 : 0);
-            h.card.setStrokeColor(getColorStateList(
-                    pos == currentIndex ? android.R.color.holo_blue_light : android.R.color.transparent));
-
+            h.card.setStrokeColor(getColorStateList(pos == currentIndex ? android.R.color.holo_blue_light : android.R.color.transparent));
             h.itemView.setOnClickListener(v -> onTabClick.onAction(pos));
             h.closeBtn.setOnClickListener(v -> onTabClose.onAction(pos));
         }
@@ -532,22 +485,15 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
         @Override public int getItemCount() { return tabs.size(); }
 
         class ViewHolder extends RecyclerView.ViewHolder {
-            MaterialCardView card;
-            TextView title, url, favicon;
-            MaterialButton closeBtn;
+            MaterialCardView card; TextView title, url, favicon; MaterialButton closeBtn;
             ViewHolder(@NonNull View v) { super(v);
-                card = (MaterialCardView) v;
-                title = v.findViewById(R.id.tab_title);
-                url = v.findViewById(R.id.tab_url);
-                favicon = v.findViewById(R.id.tab_favicon);
+                card = (MaterialCardView) v; title = v.findViewById(R.id.tab_title);
+                url = v.findViewById(R.id.tab_url); favicon = v.findViewById(R.id.tab_favicon);
                 closeBtn = v.findViewById(R.id.btnCloseTab);
             }
         }
     }
 
-    // ====================================================================
-    //  URL BAR
-    // ====================================================================
     private void setupUrlBar() {
         urlBar.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_GO) {
@@ -564,48 +510,32 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
         urlBar.setOnFocusChangeListener((v, hasFocus) -> { if (hasFocus) urlBar.selectAll(); });
     }
 
-    // ====================================================================
-    //  MENU
-    // ====================================================================
     private void setupMenuButton() {
         menuBtn.setOnClickListener(v -> {
             PopupMenu popup = new PopupMenu(MainActivity.this, v);
             popup.getMenuInflater().inflate(R.menu.browser_menu, popup.getMenu());
             popup.setOnMenuItemClickListener(item -> {
                 int id = item.getItemId();
-                if (id == R.id.menu_settings) {
-                    startActivity(new Intent(this, SettingsActivity.class));
-                    overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
-                } else if (id == R.id.menu_history) {
-                    startActivity(new Intent(this, HistoryActivity.class));
-                    overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
-                } else if (id == R.id.menu_bookmark) {
-                    startActivity(new Intent(this, BookmarksActivity.class));
-                    overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
-                } else if (id == R.id.menu_downloads) {
-                    startActivity(new Intent(this, DownloadsActivity.class));
-                    overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
-                } else if (id == R.id.menu_refresh) {
-                    if (tabManager.getCurrentTab() != null) tabManager.getCurrentTab().session.reload();
-                } else if (id == R.id.menu_share) {
-                    Intent si = new Intent(Intent.ACTION_SEND);
-                    si.setType("text/plain");
-                    si.putExtra(Intent.EXTRA_TEXT, urlBar.getText().toString());
-                    startActivity(Intent.createChooser(si, "Share Link"));
-                } else if (id == R.id.menu_active_extensions) {
-                    showActiveExtensions();
-                } else if (id == R.id.menu_videos) {
-                    showVideoBottomSheet();
-                } else if (id == R.id.menu_desktop_mode) {
+                if (id == R.id.menu_settings) { startActivity(new Intent(this, SettingsActivity.class)); overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out); }
+                else if (id == R.id.menu_history) { startActivity(new Intent(this, HistoryActivity.class)); overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out); }
+                else if (id == R.id.menu_bookmark) { startActivity(new Intent(this, BookmarksActivity.class)); overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out); }
+                else if (id == R.id.menu_downloads) { startActivity(new Intent(this, DownloadsActivity.class)); overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out); }
+                else if (id == R.id.menu_refresh) { GeckoSession s = getCurrentSession(); if (s != null) s.reload(); }
+                else if (id == R.id.menu_share) { Intent si = new Intent(Intent.ACTION_SEND); si.setType("text/plain"); si.putExtra(Intent.EXTRA_TEXT, urlBar.getText().toString()); startActivity(Intent.createChooser(si, "Share Link")); }
+                else if (id == R.id.menu_active_extensions) { showActiveExtensions(); }
+                else if (id == R.id.menu_videos) { showVideoBottomSheet(); }
+                else if (id == R.id.menu_desktop_mode) {
                     item.setChecked(!item.isChecked());
                     String js = "javascript:(function(){var m=document.querySelector('meta[name=\"viewport\"]');if(m){if(m.content.indexOf('user-scalable=no')>=0)m.content='width=device-width, initial-scale=1.0, maximum-scale=5.0';else m.content='width=1920, user-scalable=no';}})();";
-                    if (tabManager.getCurrentTab() != null) tabManager.getCurrentTab().session.loadUri(js);
+                    GeckoSession s = getCurrentSession(); if (s != null) s.loadUri(js);
                     Toast.makeText(this, item.isChecked() ? "💻 Desktop Mode ON" : "📱 Desktop Mode OFF", Toast.LENGTH_SHORT).show();
-                } else if (id == R.id.menu_devtools) {
+                }
+                else if (id == R.id.menu_devtools) {
                     String js2 = "(function(){if(window.eruda){eruda.show();return;}var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/eruda';document.body.appendChild(s);s.onload=function(){eruda.init();eruda.show();};})();";
-                    if (tabManager.getCurrentTab() != null) tabManager.getCurrentTab().session.loadUri("javascript:" + js2);
+                    GeckoSession s = getCurrentSession(); if (s != null) s.loadUri("javascript:" + js2);
                     Toast.makeText(this, "🛠️ DevTools Loading...", Toast.LENGTH_SHORT).show();
-                } else if (id == R.id.menu_proxy) {
+                }
+                else if (id == R.id.menu_proxy) {
                     if (proxyController.isProxyRunning()) { proxyController.stopProxy(); Toast.makeText(this, "🌐 Proxy stopped", Toast.LENGTH_SHORT).show(); }
                     else { proxyController.startLocalProxy(); Toast.makeText(this, "🌐 Proxy started on port 8888", Toast.LENGTH_SHORT).show(); }
                 }
@@ -622,23 +552,18 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
             runOnUiThread(() -> {
                 String[] names = new String[extensions.size()];
                 for (int i = 0; i < extensions.size(); i++) names[i] = extensions.get(i).metaData.name;
-                new AlertDialog.Builder(this).setTitle("🧩 Active Extensions")
-                        .setItems(names, (d, w) -> {
-                            WebExtension ext = extensions.get(w);
-                            if (ext.metaData != null && ext.metaData.optionsPageUrl != null) {
-                                if (tabManager.getCurrentTab() != null)
-                                    tabManager.getCurrentTab().session.loadUri(ext.metaData.optionsPageUrl);
-                            }
-                        }).setNegativeButton("Close", null).show();
+                new AlertDialog.Builder(this).setTitle("🧩 Active Extensions").setItems(names, (d, w) -> {
+                    WebExtension ext = extensions.get(w);
+                    GeckoSession s = getCurrentSession();
+                    if (s != null && ext.metaData != null && ext.metaData.optionsPageUrl != null) s.loadUri(ext.metaData.optionsPageUrl);
+                }).setNegativeButton("Close", null).show();
             });
         });
     }
 
-    // ====================================================================
-    //  URL / SEARCH
-    // ====================================================================
     private void loadUrlOrSearch(String input) {
-        if (input.isEmpty() || tabManager.getCurrentTab() == null) return;
+        GeckoSession s = getCurrentSession();
+        if (input.isEmpty() || s == null) return;
         String url;
         if (input.contains(".") && !input.contains(" ")) {
             url = input.startsWith("http") ? input : "https://" + input;
@@ -650,7 +575,7 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
             else base = "https://www.google.com/search?q=";
             url = base + Uri.encode(input);
         }
-        tabManager.getCurrentTab().session.loadUri(url);
-        setupSessionDelegates(tabManager.getCurrentTab().session);
+        s.loadUri(url);
+        setupSessionDelegates(s);
     }
 }
