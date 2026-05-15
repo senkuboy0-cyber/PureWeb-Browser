@@ -29,6 +29,7 @@ import androidx.appcompat.widget.SwitchCompat;
 import androidx.cardview.widget.CardView;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.materialswitch.MaterialSwitch;
 
 import org.mozilla.geckoview.GeckoResult;
 import org.mozilla.geckoview.GeckoRuntime;
@@ -37,27 +38,23 @@ import org.mozilla.geckoview.WebExtensionController;
 
 public class SettingsActivity extends AppCompatActivity {
 
-    private RadioGroup radioGroup;
-    private RadioButton radioGoogle, radioDuckDuckGo, radioBing;
+    private MaterialSwitch switchGoogle, switchDuckDuckGo, switchBing;
     private Button btnClearCache, btnOpenExtensions, btnInstallAdBlocker, btnCustomExtension;
     private SharedPreferences prefs;
     private LinearLayout settingsContainer;
+    private String selectedEngine = "Google";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
 
-        // Setup window animations
-        getWindow().setWindowAnimations(android.R.style.Animation_Translucent);
-
         settingsContainer = findViewById(R.id.settingsContainer);
 
         // UI Initialize
-        radioGroup = findViewById(R.id.radioGroupEngine);
-        radioGoogle = findViewById(R.id.radioGoogle);
-        radioDuckDuckGo = findViewById(R.id.radioDuckDuckGo);
-        radioBing = findViewById(R.id.radioBing);
+        switchGoogle = findViewById(R.id.radioGoogle);
+        switchDuckDuckGo = findViewById(R.id.radioDuckDuckGo);
+        switchBing = findViewById(R.id.radioBing);
         btnClearCache = findViewById(R.id.btnClearCache);
         btnOpenExtensions = findViewById(R.id.btnOpenExtensions);
         btnInstallAdBlocker = findViewById(R.id.btnInstallAdBlocker);
@@ -68,27 +65,33 @@ public class SettingsActivity extends AppCompatActivity {
         // Animate settings items on start
         animateSettingsItems();
 
-        // Search Engine Logic
-        String savedEngine = prefs.getString("search_engine", "Google");
-        if (savedEngine.equals("DuckDuckGo")) {
-            radioDuckDuckGo.setChecked(true);
-        } else if (savedEngine.equals("Bing")) {
-            radioBing.setChecked(true);
-        } else {
-            radioGoogle.setChecked(true);
-        }
+        // Load saved search engine
+        selectedEngine = prefs.getString("search_engine", "Google");
+        updateSearchEngineSelection(selectedEngine);
 
-        radioGroup.setOnCheckedChangeListener((group, checkedId) -> {
-            SharedPreferences.Editor editor = prefs.edit();
-            if (checkedId == R.id.radioGoogle) {
-                editor.putString("search_engine", "Google");
-            } else if (checkedId == R.id.radioDuckDuckGo) {
-                editor.putString("search_engine", "DuckDuckGo");
-            } else if (checkedId == R.id.radioBing) {
-                editor.putString("search_engine", "Bing");
+        // Search Engine Switches Logic
+        switchGoogle.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                selectedEngine = "Google";
+                updateSearchEngineSelection("Google");
+                saveSearchEngine("Google");
             }
-            editor.apply();
-            Toast.makeText(this, "Search Engine Saved!", Toast.LENGTH_SHORT).show();
+        });
+
+        switchDuckDuckGo.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                selectedEngine = "DuckDuckGo";
+                updateSearchEngineSelection("DuckDuckGo");
+                saveSearchEngine("DuckDuckGo");
+            }
+        });
+
+        switchBing.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                selectedEngine = "Bing";
+                updateSearchEngineSelection("Bing");
+                saveSearchEngine("Bing");
+            }
         });
 
         btnOpenExtensions.setOnClickListener(v -> {
@@ -103,12 +106,9 @@ public class SettingsActivity extends AppCompatActivity {
                     true);
         });
 
-        btnCustomExtension.setOnClickListener(v -> {
-            showCustomUrlDialog();
-        });
+        btnCustomExtension.setOnClickListener(v -> showCustomUrlDialog());
 
         btnClearCache.setOnClickListener(v -> {
-            // Animate button press
             btnClearCache.animate()
                     .scaleX(0.95f).scaleY(0.95f)
                     .setDuration(100)
@@ -123,21 +123,30 @@ public class SettingsActivity extends AppCompatActivity {
         });
     }
 
+    private void updateSearchEngineSelection(String engine) {
+        switchGoogle.setChecked(engine.equals("Google"));
+        switchDuckDuckGo.setChecked(engine.equals("DuckDuckGo"));
+        switchBing.setChecked(engine.equals("Bing"));
+    }
+
+    private void saveSearchEngine(String engine) {
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putString("search_engine", engine);
+        editor.apply();
+        Toast.makeText(this, engine + " set as default!", Toast.LENGTH_SHORT).show();
+    }
+
     private void animateSettingsItems() {
         if (settingsContainer == null) return;
         for (int i = 0; i < settingsContainer.getChildCount(); i++) {
             View child = settingsContainer.getChildAt(i);
             child.setAlpha(0f);
-            child.setTranslationY(30f);
-            child.setScaleX(0.95f);
-            child.setScaleY(0.95f);
+            child.setTranslationY(40f);
             child.animate()
                     .alpha(1f)
                     .translationY(0f)
-                    .scaleX(1f)
-                    .scaleY(1f)
-                    .setDuration(350)
-                    .setStartDelay(i * 60L)
+                    .setDuration(400)
+                    .setStartDelay(i * 100L)
                     .setInterpolator(new AccelerateDecelerateInterpolator())
                     .start();
         }
@@ -149,18 +158,15 @@ public class SettingsActivity extends AppCompatActivity {
 
     private void showModernInstallDialog(String extensionName, String source,
                                           String[] permissions, boolean isAdBlocker) {
-        // Inflate the custom dialog layout
         LayoutInflater inflater = getLayoutInflater();
         View dialogView = inflater.inflate(R.layout.dialog_install_permission, null);
 
-        // Build the AlertDialog
         AlertDialog.Builder builder = new AlertDialog.Builder(this, android.R.style.Theme_Material_Light_NoActionBar_TranslucentDecor);
         builder.setView(dialogView);
         AlertDialog dialog = builder.create();
 
-        // Make dialog background transparent so CardView shows properly
         dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-        dialog.getWindow().setWindowAnimations(android.R.style.Animation_Dialog);
+        dialog.setCanceledOnTouchOutside(false);
 
         // --- Initialize Views ---
         CardView dialogRoot = dialogView.findViewById(R.id.dialogRoot);
@@ -179,9 +185,9 @@ public class SettingsActivity extends AppCompatActivity {
 
         // --- Animate Dialog Entrance ---
         dialogRoot.setAlpha(0f);
-        dialogRoot.setScaleX(0.8f);
-        dialogRoot.setScaleY(0.8f);
-        dialogRoot.setTranslationY(100f);
+        dialogRoot.setScaleX(0.85f);
+        dialogRoot.setScaleY(0.85f);
+        dialogRoot.setTranslationY(80f);
 
         dialogRoot.animate()
                 .alpha(1f)
@@ -190,29 +196,26 @@ public class SettingsActivity extends AppCompatActivity {
                 .translationY(0f)
                 .setDuration(350)
                 .setInterpolator(new AccelerateDecelerateInterpolator())
-                .setStartDelay(50)
+                .setStartDelay(80)
                 .start();
 
         // --- Add Permission Items with Stagger Animation ---
         if (permissions.length > 0) {
             for (int i = 0; i < permissions.length; i++) {
-                final int index = i;
                 View permItem = createPermissionItem(permissions[i]);
                 permissionsContainer.addView(permItem);
 
-                // Stagger entrance animation
                 permItem.setAlpha(0f);
                 permItem.setTranslationX(-40f);
                 permItem.animate()
                         .alpha(1f)
                         .translationX(0f)
                         .setDuration(300)
-                        .setStartDelay(250 + (i * 100L))
+                        .setStartDelay(300 + (i * 120L))
                         .setInterpolator(new AccelerateDecelerateInterpolator())
                         .start();
             }
         } else {
-            // No permissions - show a friendly message
             TextView noPerm = new TextView(this);
             noPerm.setText("No special permissions required");
             noPerm.setTextSize(13);
@@ -229,62 +232,35 @@ public class SettingsActivity extends AppCompatActivity {
                 .alpha(1f)
                 .translationY(0f)
                 .setDuration(300)
-                .setStartDelay(250 + (permissions.length * 100L))
+                .setStartDelay(300 + (permissions.length * 120L))
                 .setInterpolator(new AccelerateDecelerateInterpolator())
                 .start();
 
         // --- Animate Buttons ---
+        long btnDelay = 350 + (permissions.length * 120L) + 100;
         btnCancel.setAlpha(0f);
         btnAdd.setAlpha(0f);
         btnCancel.setTranslationY(20f);
         btnAdd.setTranslationY(20f);
 
-        long btnDelay = 300 + (permissions.length * 100L) + 100;
-
-        btnCancel.animate()
-                .alpha(1f)
-                .translationY(0f)
-                .setDuration(250)
-                .setStartDelay(btnDelay)
-                .start();
-
-        btnAdd.animate()
-                .alpha(1f)
-                .translationY(0f)
-                .setDuration(250)
-                .setStartDelay(btnDelay + 80)
-                .start();
+        btnCancel.animate().alpha(1f).translationY(0f).setDuration(250).setStartDelay(btnDelay).start();
+        btnAdd.animate().alpha(1f).translationY(0f).setDuration(250).setStartDelay(btnDelay + 80).start();
 
         // --- Button Click Handlers ---
-        btnCancel.setOnClickListener(v -> {
-            animateDialogExit(dialogRoot, dialog);
-        });
+        btnCancel.setOnClickListener(v -> animateDialogExit(dialogRoot, dialog));
 
         btnAdd.setOnClickListener(v -> {
-            boolean allowPrivate = privateSwitch.isChecked();
-
-            // Button press feedback
-            btnAdd.animate()
-                    .scaleX(0.9f).scaleY(0.9f)
-                    .setDuration(80)
-                    .withEndAction(() -> {
-                        btnAdd.animate()
-                                .scaleX(1f).scaleY(1f)
-                                .setDuration(80)
-                                .start();
-                    })
+            btnAdd.animate().scaleX(0.9f).scaleY(0.9f).setDuration(80)
+                    .withEndAction(() -> btnAdd.animate().scaleX(1f).scaleY(1f).setDuration(80).start())
                     .start();
 
-            // Show installing state
             btnAdd.setText("Installing...");
             btnAdd.setEnabled(false);
             btnCancel.setEnabled(false);
 
-            // Proceed with installation
             if (isAdBlocker) {
                 installuBlockOrigin(dialog, dialogRoot);
             } else {
-                // For custom extensions, we handle it separately
                 Toast.makeText(this, "Extension installation started...", Toast.LENGTH_SHORT).show();
                 animateDialogExit(dialogRoot, dialog);
             }
@@ -296,23 +272,17 @@ public class SettingsActivity extends AppCompatActivity {
     private View createPermissionItem(String permissionText) {
         View itemView = getLayoutInflater().inflate(android.R.layout.simple_list_item_1, null);
         TextView textView = itemView.findViewById(android.R.id.text1);
-
-        // Style the permission text
         textView.setText("•  " + permissionText);
         textView.setTextSize(13);
         textView.setPadding(12, 10, 12, 10);
         textView.setTextColor(getResources().getColor(android.R.color.tab_indicator_text, getTheme()));
         textView.setAlpha(0.85f);
-
         return itemView;
     }
 
     private void animateDialogExit(CardView dialogRoot, AlertDialog dialog) {
         dialogRoot.animate()
-                .alpha(0f)
-                .scaleX(0.85f)
-                .scaleY(0.85f)
-                .translationY(80f)
+                .alpha(0f).scaleX(0.85f).scaleY(0.85f).translationY(80f)
                 .setDuration(200)
                 .setInterpolator(new AccelerateDecelerateInterpolator())
                 .withEndAction(dialog::dismiss)
@@ -320,7 +290,7 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     // ========================================================================
-    //  EXTENSION INSTALLATION METHODS (UPDATED WITH MODERN DIALOG)
+    //  EXTENSION INSTALLATION
     // ========================================================================
 
     private void installuBlockOrigin(AlertDialog dialog, CardView dialogRoot) {
@@ -362,7 +332,6 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     private void showCustomUrlDialog() {
-        // Modern custom URL dialog
         AlertDialog.Builder builder = new AlertDialog.Builder(this, android.R.style.Theme_Material_Light_Dialog_Alert);
         builder.setTitle("🔗 Install Custom Extension");
 
@@ -370,12 +339,8 @@ public class SettingsActivity extends AppCompatActivity {
         input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
         input.setHint("https://example.com/extension.xpi");
         input.setPadding(24, 16, 24, 16);
-        input.setBackgroundTintList(
-                android.content.res.ColorStateList.valueOf(
-                        getResources().getColor(android.R.color.holo_blue_light, getTheme())));
 
         builder.setView(input);
-
         builder.setPositiveButton("Install", (dialog, which) -> {
             String url = input.getText().toString().trim();
             if (!url.isEmpty()) {
@@ -386,16 +351,7 @@ public class SettingsActivity extends AppCompatActivity {
                 Toast.makeText(this, "Please enter a valid URL", Toast.LENGTH_SHORT).show();
             }
         });
-
         builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
-
-        AlertDialog dialog = builder.create();
-        dialog.show();
-
-        // Style the buttons
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(
-                getResources().getColor(android.R.color.holo_blue_dark, getTheme()));
-        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(
-                getResources().getColor(android.R.color.darker_gray, getTheme()));
+        builder.show();
     }
 }
