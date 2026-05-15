@@ -1,27 +1,133 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:background="#000000">
+    android:background="?android:colorBackground"
+    android:animateLayoutChanges="true">
+
+    <!-- Handle Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:paddingTop="8dp"
+        android:paddingBottom="4dp">
+
+        <View
+            android:layout_width="40dp"
+            android:layout_height="4dp"
+            android:background="?android:textColorSecondary"
+            android:alpha="0.3"
+            app:cornerRadius="2dp" />
+
+    </LinearLayout>
+
+    <!-- Video Title -->
+    <TextView
+        android:id="@+id/playerTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="8dp"
+        android:text="Video Player"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="?android:textColorPrimary"
+        android:maxLines="1"
+        android:ellipsize="end" />
 
     <!-- Player -->
-    <androidx.media3.ui.PlayerView
-        android:id="@+id/playerView"
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="230dp"
-        android:background="#000000"/>
+        android:layout_marginHorizontal="8dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp"
+        app:cardBackgroundColor="#000000"
+        android:foreground="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true">
 
-    <!-- Download button -->
-    <Button
-        android:id="@+id/btnDownload"
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <androidx.media3.ui.PlayerView
+                android:id="@+id/playerView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#000000"
+                app:use_controller="true"
+                app:show_buffering="when_playing"
+                app:resize_mode="fit" />
+
+            <!-- Play overlay when no video -->
+            <TextView
+                android:id="@+id/playerOverlay"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="▶️"
+                android:textSize="48sp"
+                android:visibility="gone"
+                android:background="#66000000" />
+
+        </FrameLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Controls Row -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_margin="12dp"
-        android:text="⬇  Download Video"
-        android:backgroundTint="#2E7D32"
-        android:textColor="#FFFFFF"
-        android:textSize="14sp"
-        android:textAllCaps="false"/>
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="16dp">
+
+        <!-- Video Info -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/playerVideoSource"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Source: youtube.com"
+                android:textSize="12sp"
+                android:textColor="?android:textColorSecondary"
+                android:alpha="0.7" />
+
+            <TextView
+                android:id="@+id/playerVideoSize"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Size: -- MB"
+                android:textSize="12sp"
+                android:textColor="?android:textColorSecondary"
+                android:alpha="0.6"
+                android:layout_marginTop="2dp" />
+
+        </LinearLayout>
+
+        <!-- Download Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDownload"
+            style="@style/Widget.Material3.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:text="⬇ Download"
+            android:textSize="14sp"
+            app:cornerRadius="24dp"
+            app:icon="@android:drawable/ic_menu_save"
+            app:iconGravity="textStart" />
+
+    </LinearLayout>
 
 </LinearLayout>
