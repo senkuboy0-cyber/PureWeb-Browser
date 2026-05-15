@@ -21,6 +21,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
 
+import org.mozilla.geckoview.GeckoSession;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -186,7 +187,8 @@ public class BookmarksActivity extends AppCompatActivity {
                     .setInterpolator(new DecelerateInterpolator()).start();
 
             holder.itemView.setOnClickListener(v -> {
-                if (MainActivity.session != null) { MainActivity.session.loadUri(item.url); finish(); }
+                GeckoSession session = MainActivity.getCurrentSession();
+                if (session != null) { session.loadUri(item.url); finish(); }
             });
 
             holder.itemView.setOnLongClickListener(v -> {
