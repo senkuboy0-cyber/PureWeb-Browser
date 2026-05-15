@@ -1,5 +1,60 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Primary Colors - Pure Blue -->
+    <color name="primary">#1565C0</color>
+    <color name="primary_dark">#0D47A1</color>
+    <color name="primary_light">#1E88E5</color>
+    <color name="on_primary">#FFFFFF</color>
+    <color name="primary_container">#D1E4FF</color>
+    <color name="on_primary_container">#001D36</color>
+
+    <!-- Secondary -->
+    <color name="secondary">#535F70</color>
+    <color name="on_secondary">#FFFFFF</color>
+    <color name="secondary_container">#D7E3F7</color>
+    <color name="on_secondary_container">#101C2B</color>
+
+    <!-- Tertiary -->
+    <color name="tertiary">#6B5778</color>
+    <color name="on_tertiary">#FFFFFF</color>
+    <color name="tertiary_container">#F2DAFF</color>
+    <color name="on_tertiary_container">#251431</color>
+
+    <!-- Error -->
+    <color name="error">#BA1A1A</color>
+    <color name="on_error">#FFFFFF</color>
+    <color name="error_container">#FFDAD6</color>
+    <color name="on_error_container">#410002</color>
+
+    <!-- Background & Surface (Light) -->
+    <color name="background">#FDFCFF</color>
+    <color name="on_background">#1A1C1E</color>
+    <color name="surface">#FDFCFF</color>
+    <color name="on_surface">#1A1C1E</color>
+    <color name="surface_variant">#DFE2EB</color>
+    <color name="on_surface_variant">#43474E</color>
+    <color name="outline">#73777F</color>
+    <color name="outline_variant">#C3C7CF</color>
+
+    <!-- Dark Theme Colors -->
+    <color name="primary_dark_theme">#9ECAFF</color>
+    <color name="on_primary_dark">#003258</color>
+    <color name="primary_container_dark">#00497D</color>
+    <color name="on_primary_container_dark">#D1E4FF</color>
+
+    <color name="secondary_dark_theme">#BBC7DB</color>
+    <color name="on_secondary_dark">#253140</color>
+    <color name="secondary_container_dark">#3B4858</color>
+    <color name="on_secondary_container_dark">#D7E3F7</color>
+
+    <color name="background_dark">#1A1C1E</color>
+    <color name="on_background_dark">#E2E2E6</color>
+    <color name="surface_dark">#1A1C1E</color>
+    <color name="on_surface_dark">#E2E2E6</color>
+    <color name="surface_variant_dark">#43474E</color>
+    <color name="on_surface_variant_dark">#C3C7CF</color>
+
+    <!-- Legacy colors (keep for compatibility) -->
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
@@ -7,18 +62,23 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    
-    <!-- PureWeb Theme Colors -->
+
+    <!-- PureWeb Legacy -->
     <color name="pureweb_primary">#1565C0</color>
     <color name="pureweb_primary_dark">#0D47A1</color>
-
-    <!-- Missing Colors -->
     <color name="url_bar_bg">#FFFFFF</color>
     <color name="light_gray">#F5F5F5</color>
-    
-    <!-- Logo Gradient Colors -->
+
+    <!-- Logo Colors -->
     <color name="logo_blue_dark">#0D47A1</color>
     <color name="logo_blue_mid">#1565C0</color>
     <color name="logo_blue_light">#1E88E5</color>
     <color name="logo_grid_blue">#64B5F6</color>
+
+    <!-- New UI Colors -->
+    <color name="home_bg_start">#FF1565C0</color>
+    <color name="home_bg_end">#FF0D47A1</color>
+    <color name="card_bg">#F8F9FA</color>
+    <color name="divider">#E0E0E0</color>
+    <color name="ripple">#221565C0</color>
 </resources>
