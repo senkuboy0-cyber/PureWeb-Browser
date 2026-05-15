@@ -18,10 +18,6 @@ import com.pureweb.browser.data.VideoInfo;
 
 import java.util.List;
 
-/**
- * Adapter for displaying detected videos in a RecyclerView
- * Uses VideoInfo objects from the new detection system
- */
 public class VideoListAdapter extends RecyclerView.Adapter<VideoListAdapter.VideoViewHolder> {
 
     private List<VideoInfo> videos;
@@ -40,12 +36,10 @@ public class VideoListAdapter extends RecyclerView.Adapter<VideoListAdapter.Vide
         this.playListener = playListener;
     }
 
-    @NonNull
-    @Override
+    @NonNull @Override
     public VideoViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_video, parent, false);
-        return new VideoViewHolder(view);
+        return new VideoViewHolder(LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.item_video, parent, false));
     }
 
     @Override
@@ -60,7 +54,6 @@ public class VideoListAdapter extends RecyclerView.Adapter<VideoListAdapter.Vide
     }
 
     class VideoViewHolder extends RecyclerView.ViewHolder {
-
         private TextView tvTitle, tvSource, tvQuality;
         private MaterialButton btnDownload;
         private MaterialCardView card;
@@ -79,14 +72,17 @@ public class VideoListAdapter extends RecyclerView.Adapter<VideoListAdapter.Vide
             String title = video.getTitle();
             tvTitle.setText(title != null && !title.isEmpty() ? title : "Unknown Video");
 
-            // Source
-            String source = video.getSourceUrl();
+            // Source - use originalUrl or first download URL
+            String source = video.getOriginalUrl();
+            if (source == null || source.isEmpty()) {
+                source = video.getFirstUrl();
+            }
             if (source != null && !source.isEmpty()) {
                 try {
                     java.net.URL url = new java.net.URL(source);
                     tvSource.setText(url.getHost());
                 } catch (Exception e) {
-                    tvSource.setText(source);
+                    tvSource.setText(source.length() > 40 ? source.substring(0, 37) + "..." : source);
                 }
             } else {
                 tvSource.setText("local");
@@ -100,12 +96,7 @@ public class VideoListAdapter extends RecyclerView.Adapter<VideoListAdapter.Vide
                 qualityText = "🎞️ DASH Stream";
             } else {
                 String ext = video.getExt();
-                String size = video.getFileSize();
-                if (size != null && !size.isEmpty()) {
-                    qualityText = (ext != null ? ext.toUpperCase() : "MP4") + " • " + size;
-                } else {
-                    qualityText = ext != null ? ext.toUpperCase() : "📹 Video";
-                }
+                qualityText = ext != null ? ext.toUpperCase() : "📹 Video";
             }
             tvQuality.setText(qualityText);
 
@@ -125,14 +116,13 @@ public class VideoListAdapter extends RecyclerView.Adapter<VideoListAdapter.Vide
                         .withEndAction(() -> btnDownload.animate()
                                 .scaleX(1f).scaleY(1f).setDuration(80).start())
                         .start();
-                if (downloadListener != null) {
-                    downloadListener.onClick(video);
-                }
+                if (downloadListener != null) downloadListener.onClick(video);
             });
 
             // Click card to preview
             card.setOnClickListener(v -> {
-                if (playListener != null && video.getFirstUrl() != null) {
+                if (playListener != null && video.getFirstUrl() != null
+                        && !video.getFirstUrl().isEmpty()) {
                     playListener.onClick(video);
                 }
             });
