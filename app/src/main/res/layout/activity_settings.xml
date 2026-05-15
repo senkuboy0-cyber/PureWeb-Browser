@@ -15,8 +15,8 @@
         android:paddingBottom="24dp"
         android:animateLayoutChanges="true">
 
-        <!-- Search Engine -->
-        <androidx.cardview.widget.CardView
+        <!-- 🔍 Search Engine -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="12dp"
@@ -25,48 +25,32 @@
             app:cardElevation="2dp"
             app:cardBackgroundColor="?android:colorBackground">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:padding="16dp">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-
-                    <TextView
-                        android:layout_width="40dp" android:layout_height="40dp"
-                        android:gravity="center" android:text="🔍"
-                        android:textSize="20sp"
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:gravity="center_vertical">
+                    <TextView android:layout_width="40dp" android:layout_height="40dp"
+                        android:gravity="center" android:text="🔍" android:textSize="20sp"
                         android:background="@drawable/ic_extension_bg" />
-
-                    <LinearLayout
-                        android:layout_width="0dp" android:layout_height="wrap_content"
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
                         android:layout_weight="1" android:layout_marginStart="12dp"
                         android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="Search Engine"
-                            android:textSize="16sp" android:textStyle="bold"
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="Search Engine" android:textSize="16sp" android:textStyle="bold"
                             android:textColor="?android:textColorPrimary" />
-
-                        <TextView
-                            android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="Choose your default search provider"
-                            android:textSize="12sp"
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="Choose your default search provider" android:textSize="12sp"
                             android:textColor="?android:textColorSecondary" />
                     </LinearLayout>
                 </LinearLayout>
 
-                <RadioGroup
-                    android:id="@+id/radioGroupEngine"
+                <LinearLayout
+                    android:id="@+id/searchEngineGroup"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
+                    android:orientation="vertical"
                     android:paddingHorizontal="4dp">
 
                     <com.google.android.material.materialswitch.MaterialSwitch
@@ -90,13 +74,13 @@
                         android:layout_height="wrap_content"
                         android:text="Bing"
                         android:textSize="14sp" />
+                </LinearLayout>
 
-                </RadioGroup>
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
-        <!-- Extensions -->
-        <androidx.cardview.widget.CardView
+        <!-- 🧩 Extensions -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="12dp"
@@ -105,39 +89,22 @@
             app:cardElevation="2dp"
             app:cardBackgroundColor="?android:colorBackground">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:padding="16dp">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-
-                    <TextView
-                        android:layout_width="40dp" android:layout_height="40dp"
-                        android:gravity="center" android:text="🧩"
-                        android:textSize="20sp"
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:gravity="center_vertical">
+                    <TextView android:layout_width="40dp" android:layout_height="40dp"
+                        android:gravity="center" android:text="🧩" android:textSize="20sp"
                         android:background="@drawable/ic_extension_bg" />
-
-                    <LinearLayout
-                        android:layout_width="0dp" android:layout_height="wrap_content"
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
                         android:layout_weight="1" android:layout_marginStart="12dp"
                         android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="Extensions"
-                            android:textSize="16sp" android:textStyle="bold"
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="Extensions" android:textSize="16sp" android:textStyle="bold"
                             android:textColor="?android:textColorPrimary" />
-
-                        <TextView
-                            android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="Manage browser extensions and add-ons"
-                            android:textSize="12sp"
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="Manage browser extensions &amp; add-ons" android:textSize="12sp"
                             android:textColor="?android:textColorSecondary" />
                     </LinearLayout>
                 </LinearLayout>
@@ -146,39 +113,30 @@
                     android:id="@+id/btnOpenExtensions"
                     style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="match_parent" android:layout_height="52dp"
-                    android:layout_marginTop="12dp"
-                    android:text="Extension Store"
-                    android:textSize="14sp"
-                    app:cornerRadius="12dp"
-                    app:icon="@android:drawable/ic_menu_add"
-                    app:iconGravity="textStart" />
+                    android:layout_marginTop="12dp" android:text="Extension Store"
+                    android:textSize="14sp" app:cornerRadius="12dp"
+                    app:icon="@android:drawable/ic_menu_add" app:iconGravity="textStart" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnInstallAdBlocker"
                     style="@style/Widget.Material3.Button"
                     android:layout_width="match_parent" android:layout_height="52dp"
-                    android:layout_marginTop="8dp"
-                    android:text="Install uBlock Origin"
-                    android:textSize="14sp"
-                    app:cornerRadius="12dp"
-                    app:icon="@android:drawable/ic_delete"
-                    app:iconGravity="textStart" />
+                    android:layout_marginTop="8dp" android:text="Install uBlock Origin"
+                    android:textSize="14sp" app:cornerRadius="12dp"
+                    app:icon="@android:drawable/ic_delete" app:iconGravity="textStart" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnCustomExtension"
                     style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="match_parent" android:layout_height="52dp"
-                    android:layout_marginTop="8dp"
-                    android:text="Install Custom Extension"
-                    android:textSize="14sp"
-                    app:cornerRadius="12dp"
-                    app:icon="@android:drawable/ic_menu_edit"
-                    app:iconGravity="textStart" />
+                    android:layout_marginTop="8dp" android:text="Install Custom Extension"
+                    android:textSize="14sp" app:cornerRadius="12dp"
+                    app:icon="@android:drawable/ic_menu_edit" app:iconGravity="textStart" />
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
-        <!-- Browsing Data -->
-        <androidx.cardview.widget.CardView
+        <!-- 🧹 Browsing Data -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="12dp"
@@ -187,39 +145,22 @@
             app:cardElevation="2dp"
             app:cardBackgroundColor="?android:colorBackground">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:padding="16dp">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-
-                    <TextView
-                        android:layout_width="40dp" android:layout_height="40dp"
-                        android:gravity="center" android:text="🧹"
-                        android:textSize="20sp"
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:gravity="center_vertical">
+                    <TextView android:layout_width="40dp" android:layout_height="40dp"
+                        android:gravity="center" android:text="🧹" android:textSize="20sp"
                         android:background="@drawable/ic_extension_bg" />
-
-                    <LinearLayout
-                        android:layout_width="0dp" android:layout_height="wrap_content"
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
                         android:layout_weight="1" android:layout_marginStart="12dp"
                         android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="Browsing Data"
-                            android:textSize="16sp" android:textStyle="bold"
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="Browsing Data" android:textSize="16sp" android:textStyle="bold"
                             android:textColor="?android:textColorPrimary" />
-
-                        <TextView
-                            android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="Clear cache, cookies and site data"
-                            android:textSize="12sp"
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="Clear cache, cookies and site data" android:textSize="12sp"
                             android:textColor="?android:textColorSecondary" />
                     </LinearLayout>
                 </LinearLayout>
@@ -228,16 +169,12 @@
                     android:id="@+id/btnClearCache"
                     style="@style/Widget.Material3.Button"
                     android:layout_width="match_parent" android:layout_height="52dp"
-                    android:layout_marginTop="12dp"
-                    android:text="Clear Browsing Data"
-                    android:textSize="14sp"
-                    app:cornerRadius="12dp"
-                    app:icon="@android:drawable/ic_menu_delete"
-                    app:iconGravity="textStart"
+                    android:layout_marginTop="12dp" android:text="Clear Browsing Data"
+                    android:textSize="14sp" app:cornerRadius="12dp"
+                    app:icon="@android:drawable/ic_menu_delete" app:iconGravity="textStart"
                     app:backgroundTint="?colorError" />
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>
-
 </ScrollView>
