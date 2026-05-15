@@ -14,6 +14,7 @@
 
         <!-- 🖼️ Hero Section with Icon -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/heroCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:cardCornerRadius="0dp"
@@ -78,6 +79,7 @@
 
         <!-- 📊 Stats Row -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/statsCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="12dp"
@@ -194,6 +196,7 @@
 
         <!-- 📝 Description Section -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/descCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="12dp"
@@ -233,6 +236,7 @@
 
         <!-- 🔒 Permissions Section -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/permissionsCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="12dp"
