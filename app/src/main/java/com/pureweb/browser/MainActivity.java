@@ -310,7 +310,8 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
         pv.setPlayer(exoPlayer);
         exoPlayer.setMediaItem(MediaItem.fromUri(url));
         exoPlayer.prepare(); exoPlayer.play();
-        bd.setOnClickListener(ev -> { new PureWebDownloader(this).download(new VideoInfo(url)); d.dismiss(); });
+        // Fix: use downloader instance instead of new PureWebDownloader(this)
+        bd.setOnClickListener(ev -> { downloader.download(new VideoInfo(url)); d.dismiss(); });
         d.setOnDismissListener(ev -> { if (exoPlayer != null) { exoPlayer.release(); exoPlayer = null; } });
         d.setContentView(v); d.show();
     }
@@ -404,7 +405,8 @@ public class MainActivity extends AppCompatActivity implements VideoDetectionMan
             @Override public void onCanGoBack(GeckoSession s, boolean cgb) {
                 canGoBack = cgb; btnBack.setAlpha(canGoBack ? 1.0f : 0.4f);
             }
-            @Override public void onLocationChange(GeckoSession s, String url) {
+            // onLocationChange might be deprecated in some versions, removing @Override
+            public void onLocationChange(GeckoSession s, String url) {
                 runOnUiThread(() -> {
                     urlBar.setText(url); updateSecurityIcon(url);
                     if (tabManager.getCurrentTab() != null) tabManager.getCurrentTab().url = url;
